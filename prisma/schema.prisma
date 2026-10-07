@@ -1,0 +1,426 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Company {
+  id                       Int                       @id @default(autoincrement())
+  name                     String
+  logo                     String?
+  prefix                   String?
+  subscriptionPlan         String?
+  users                    User[]
+  customers                Customer[]
+  jobs                     Job[]
+  roles                    Role[]
+  trainees                 Trainee[]
+  documents                Document[]
+  timesheets               Timesheet[]
+  certificateVerifications CertificateVerification[]
+  reschedules              Reschedule[]
+  inspections              Inspection[]
+  trainings                Training[]
+  trainingSessions         TrainingSession[]
+  certificates             Certificate[]
+  checklistTemplates       ChecklistTemplate[]
+  checklistResults         ChecklistResult[]
+  revisions                Revision[]
+  payments                 Payment[]
+  invoices                 Invoice[]
+  deliveryLogs             DeliveryLog[]
+  auditLogs                AuditLog[]
+  authSessions             AuthSession[]
+  traineeDocuments         TraineeDocument[]
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String
+  description String?
+  companyId   Int
+  company     Company          @relation(fields: [companyId], references: [id])
+  permissions RolePermission[]
+  users       User[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([name, companyId])
+}
+
+model Permission {
+  id          Int                      @id @default(autoincrement())
+  name        String                   @unique
+  description String?
+  category    String?
+  roles       RolePermission[]
+  overrides   UserPermissionOverride[]
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  role         Role       @relation(fields: [roleId], references: [id])
+  permissionId Int
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+model UserPermissionOverride {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  user         User       @relation(fields: [userId], references: [id])
+  permissionId Int
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  granted      Boolean    @default(true)
+
+  @@unique([userId, permissionId])
+}
+
+model User {
+  id                  Int                      @id @default(autoincrement())
+  name                String
+  email               String                   @unique
+  passwordHash        String
+  role                String
+  roleId              Int?
+  roleRef             Role?                    @relation(fields: [roleId], references: [id])
+  companyId           Int
+  company             Company                  @relation(fields: [companyId], references: [id])
+  lastLogin           DateTime?
+  status              String                   @default("active")
+  jobs                Job[]                    @relation("EngineerJobs")
+  reschedules         Reschedule[]             @relation("RescheduledBy")
+  checklistResults    ChecklistResult[]
+  revisions           Revision[]               @relation("ApprovedBy")
+  auditLogs           AuditLog[]
+  authSessions        AuthSession[]
+  permissionOverrides UserPermissionOverride[]
+  timesheets          Timesheet[]              @relation("TimesheetUser")
+  approvedTimesheets  Timesheet[]              @relation("TimesheetApprover")
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id])
+  contact   String?
+  email     String?
+  phone     String?
+  jobs      Job[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Job {
+  id               Int               @id @default(autoincrement())
+  companyId        Int
+  company          Company           @relation(fields: [companyId], references: [id])
+  customerId       Int
+  customer         Customer          @relation(fields: [customerId], references: [id])
+  jobNumber        String            @unique
+  type             String?
+  status           String            @default("pending")
+  scheduledDate    DateTime?
+  engineerId       Int?
+  engineer         User?             @relation("EngineerJobs", fields: [engineerId], references: [id])
+  cancelReason     String?
+  incompleteReason String?
+  reschedules      Reschedule[]
+  inspections      Inspection[]
+  trainings        Training[]
+  trainingSessions TrainingSession[]
+  certificates     Certificate[]
+  payments         Payment[]
+  checklistResults ChecklistResult[]
+  timesheets       Timesheet[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Reschedule {
+  id            Int       @id @default(autoincrement())
+  companyId     Int
+  company       Company   @relation(fields: [companyId], references: [id])
+  jobId         Int
+  job           Job       @relation(fields: [jobId], references: [id])
+  reason        String?
+  suggestedDate DateTime?
+  approvedDate  DateTime?
+  rescheduledBy Int?
+  user          User?     @relation("RescheduledBy", fields: [rescheduledBy], references: [id])
+  status        String    @default("pending")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Inspection {
+  id               Int      @id @default(autoincrement())
+  companyId        Int
+  company          Company  @relation(fields: [companyId], references: [id])
+  jobId            Int
+  job              Job      @relation(fields: [jobId], references: [id])
+  checklistResults Json?
+  result           String?
+  attachments      String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Training {
+  id               Int               @id @default(autoincrement())
+  companyId        Int
+  company          Company           @relation(fields: [companyId], references: [id])
+  jobId            Int
+  job              Job               @relation(fields: [jobId], references: [id])
+  module           String?
+  result           String?
+  attachments      String[]
+  trainingSessions TrainingSession[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model TrainingSession {
+  id          Int       @id @default(autoincrement())
+  companyId   Int
+  company     Company   @relation(fields: [companyId], references: [id])
+  jobId       Int
+  job         Job       @relation(fields: [jobId], references: [id])
+  traineeId   Int
+  trainee     Trainee   @relation(fields: [traineeId], references: [id])
+  trainingId  Int?
+  training    Training? @relation(fields: [trainingId], references: [id])
+  sessionDate DateTime
+  duration    Int?
+  topic       String?
+  status      String    @default("scheduled")
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Certificate {
+  id                  Int                       @id @default(autoincrement())
+  companyId           Int
+  company             Company                   @relation(fields: [companyId], references: [id])
+  jobId               Int
+  job                 Job                       @relation(fields: [jobId], references: [id])
+  jobNumber           String
+  sequence            Int
+  number              String                    @unique
+  revision            Int                       @default(0)
+  pdfUrl              String?
+  qrUrl               String?
+  status              String?
+  complianceAuthority String?
+  revisions           Revision[]
+  deliveryLogs        DeliveryLog[]
+  verifications       CertificateVerification[]
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@unique([jobId, sequence])
+}
+
+model ChecklistTemplate {
+  id              Int               @id @default(autoincrement())
+  companyId       Int
+  company         Company           @relation(fields: [companyId], references: [id])
+  certificateType String
+  authority       String?
+  items           Json
+  results         ChecklistResult[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model ChecklistResult {
+  id         Int               @id @default(autoincrement())
+  companyId  Int
+  company    Company           @relation(fields: [companyId], references: [id])
+  jobId      Int
+  job        Job               @relation(fields: [jobId], references: [id])
+  itemId     Int
+  template   ChecklistTemplate @relation(fields: [itemId], references: [id])
+  status     String?
+  remarks    String?
+  verifiedBy Int?
+  user       User?             @relation(fields: [verifiedBy], references: [id])
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+}
+
+model Revision {
+  id            Int         @id @default(autoincrement())
+  companyId     Int
+  company       Company     @relation(fields: [companyId], references: [id])
+  certificateId Int
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  rootCause     String?
+  oldValue      String?
+  newValue      String?
+  approvedBy    Int?
+  user          User?       @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Payment {
+  id        Int       @id @default(autoincrement())
+  companyId Int
+  company   Company   @relation(fields: [companyId], references: [id])
+  jobId     Int
+  job       Job       @relation(fields: [jobId], references: [id])
+  amount    Float
+  method    String?
+  status    String?
+  invoices  Invoice[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Invoice {
+  id            Int      @id @default(autoincrement())
+  companyId     Int
+  company       Company  @relation(fields: [companyId], references: [id])
+  paymentId     Int
+  payment       Payment  @relation(fields: [paymentId], references: [id])
+  invoiceNumber String   @unique
+  pdfUrl        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model DeliveryLog {
+  id            Int         @id @default(autoincrement())
+  companyId     Int
+  company       Company     @relation(fields: [companyId], references: [id])
+  certificateId Int
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  deliveryDate  DateTime?
+  method        String?
+  status        String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  companyId  Int
+  company    Company  @relation(fields: [companyId], references: [id])
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   Int?
+  tenantId   Int
+  timestamp  DateTime @default(now())
+}
+
+model AuthSession {
+  id        Int       @id @default(autoincrement())
+  companyId Int
+  company   Company   @relation(fields: [companyId], references: [id])
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  token     String    @unique
+  expiry    DateTime?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+}
+
+model Trainee {
+  id               Int               @id @default(autoincrement())
+  companyId        Int
+  company          Company           @relation(fields: [companyId], references: [id])
+  firstName        String
+  lastName         String
+  email            String?
+  phone            String?
+  employeeId       String?
+  department       String?
+  position         String?
+  hireDate         DateTime?
+  status           String            @default("active")
+  documents        TraineeDocument[]
+  trainingSessions TrainingSession[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([email, companyId])
+  @@unique([employeeId, companyId])
+}
+
+model TraineeDocument {
+  id         Int       @id @default(autoincrement())
+  companyId  Int
+  company    Company   @relation(fields: [companyId], references: [id])
+  traineeId  Int
+  trainee    Trainee   @relation(fields: [traineeId], references: [id])
+  name       String
+  type       String
+  url        String
+  expiryDate DateTime?
+  status     String    @default("valid")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Timesheet {
+  id           Int      @id @default(autoincrement())
+  companyId    Int
+  company      Company  @relation(fields: [companyId], references: [id])
+  userId       Int
+  user         User     @relation("TimesheetUser", fields: [userId], references: [id])
+  jobId        Int?
+  job          Job?     @relation(fields: [jobId], references: [id])
+  date         DateTime
+  startTime    DateTime
+  endTime      DateTime
+  breakMinutes Int      @default(0)
+  description  String?
+  status       String   @default("draft")
+  approvedBy   Int?
+  approver     User?    @relation("TimesheetApprover", fields: [approvedBy], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model CertificateVerification {
+  id            Int         @id @default(autoincrement())
+  companyId     Int
+  company       Company     @relation(fields: [companyId], references: [id])
+  certificateId Int
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  verifiedBy    String
+  verifiedAt    DateTime    @default(now())
+  method        String
+  result        String
+  notes         String?
+  createdAt     DateTime    @default(now())
+}
+
+model Document {
+  id         Int      @id @default(autoincrement())
+  companyId  Int
+  company    Company  @relation(fields: [companyId], references: [id])
+  name       String
+  type       String
+  category   String?
+  url        String
+  size       Int?
+  mimeType   String?
+  entityType String?
+  entityId   Int?
+  uploadedBy Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

@@ -1,0 +1,85 @@
+Project Implementation Plan, Map & Audit Log
+This document serves as the live tracking artifact and project control document for the Offline-First Inspection + Training + Certificate AI SaaS implementation.
+
+📊 Live Status Table
+Phase	Status	Implementation	Tests	Acceptance	Blocker
+0 Audit	✅ Complete	100%	100%	✅	—
+1 Design System	🟡 In Progress	60%	—	—	Responsive polish
+2 Auth/RBAC	⏳ Pending	0%	—	—	Phase 1
+3 Training	⏳ Pending	0%	—	—	Phase 2
+4 Trainees	⏳ Pending	0%	—	—	Phase 3
+5 Sessions	⏳ Pending	0%	—	—	Phase 4
+6 Assessment	⏳ Pending	0%	—	—	Phase 5
+7 Competency	⏳ Pending	0%	—	—	Phase 6
+8 Certificate	⏳ Pending	0%	—	—	Phase 7
+9 Offline	⏳ Pending	0%	—	—	Phase 8
+10–17	🔒 Planned	0%	—	—	First Release Gate
+🚦 FIRST RELEASE GATE
+Training → Attendance → Assessment → Competency → Certificate → QR → Offline Sync Subsequent phases may be developed in parallel, but production release of those phases is blocked until the First Release Gate passes.
+
+🏗️ Phase 0 — Audit & Preservation
+Status: ✅ COMPLETE Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Audit Findings:
+
+Next.js Version: 14.0.0 (App Router configured via Phase 1)
+Styling: Tailwind CSS + PostCSS + shadcn/Radix primitives configured.
+Dependencies: React 18.2.0, Prisma ORM, PostgreSQL (pg), Framer Motion, Lucide React.
+Database: Prisma schema exists (requires structural migration towards Training domain).
+Rule: Explicitly audit existing functionality before migration. Mark every existing route, model, API, component, and workflow as KEEP / MODIFY / MIGRATE / DEPRECATE.
+🎨 Phase 1 — Design System & Application Shell
+Status: 🟡 IN PROGRESS Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Progress Map:
+
+ Base layout wrappers (AppShell, Sidebar, Header) created.
+ Global CSS initialized (globals.css).
+ Core Shadcn primitives installed.
+ Utility functions added.
+ Responsive layout, loading/empty/error states, typography, spacing, tables, forms, dialogs, and mobile navigation foundation.
+🔐 Phase 2 — Multi-Tenant Auth + RBAC + Audit
+Status: ⏳ PENDING Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Requirements:
+
+Multi-Tenant architecture (not just RBAC).
+Company/Tenant, User, Role, Permission, RolePermission, UserPermissionOverride, AuditLog.
+Tenant-scoped queries and tenant-aware middleware.
+📚 Phase 3 — Training Programs / Courses / LMS
+Status: ⏳ PENDING Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Requirements:
+
+TrainingProgram → Course → Module → Lesson relationships.
+Publishing/versioning rules.
+Distinguish course content from scheduled training sessions.
+👥 Phase 4 — Trainees + Identity Documents + Photos
+Status: ⏳ PENDING Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Requirements:
+
+Trainee is completely independent of User (a trainee receives training without needing a SaaS login).
+Identity document and photo capture workflows.
+🎓 Phase 5 — Training Sessions + Attendance
+Status: ⏳ PENDING Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Requirements:
+
+Managing live, scheduled training sessions.
+Attendance capturing.
+📝 Phase 6 — Quiz + Assessment + Practical Assessment
+Status: ⏳ PENDING Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Requirements:
+
+Separate knowledge assessment from practical competency.
+Auto-scoring for quizzes.
+🏅 Phase 7 — Competency + Authorization
+Status: ⏳ PENDING Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Requirements:
+
+Quiz score alone does not automatically create engineering competency.
+Practical assessment/approval required to grant authorization.
+📜 Phase 8 — Training Certificates + QR Verification
+Status: ⏳ PENDING Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Requirements:
+
+Certificate state machine: DRAFT → PENDING_APPROVAL → ISSUED → EXPIRED / REVOKED / CANCELLED.
+QR verification routing.
+📡 Phase 9 — Offline-First + Sync + Conflict Resolution
+Status: ⏳ PENDING Acceptance Gate: Implementation → Typecheck → Lint → Tests → Security → Mobile → Desktop → Acceptance. Requirements:
+
+All previous training features must be designed with offline compatibility in mind to avoid rebuilding UI.
+🔒 Post-Release Phases (Blocked by First Release Gate)
+Phase 10 — Inspection Management
+Phase 11 — Inspection Checklist + Evidence
+Phase 12 — Technical Review + Inspection Certificate
+Phase 13 — Scheduling + Rescheduling + Failed Workflows
+Phase 14 — Sales + Quotations + Jobs + Payments
+Phase 15 — Invoice + Delivery + Notifications
+Phase 16 — AI + Automation + Analytics
+Phase 17 — Production Hardening + Security + Performance
