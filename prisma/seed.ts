@@ -1,11 +1,23 @@
 import { PrismaClient, Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { JobNumberService } from '../src/lib/services/job-number.service'
-import { CertificateNumberService } from '../src/lib/services/certificate-number.service'
-import { VerificationTokenService } from '../src/lib/services/verification-token.service'
 
 const prisma = new PrismaClient()
-const tokenService = new VerificationTokenService();
+
+// Inline minimal implementations of job number and certificate number generation
+// to avoid module resolution issues with ts-node
+function generateJobNumber(): string {
+  const min = 1000000;
+  const num = Math.floor(Math.random() * (9999999 - min + 1)) + min;
+  return `TSC-${num}`;
+}
+
+function formatCertificateNumber(jobNumber: string, sequence: number): string {
+  return `${jobNumber}-${String(sequence).padStart(2, '0')}`;
+}
+
+function generateToken(): string {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
 
 /**
  * Idempotent seed script.
