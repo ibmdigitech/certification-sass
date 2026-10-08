@@ -35,6 +35,14 @@ model Company {
   auditLogs                AuditLog[]
   authSessions             AuthSession[]
   traineeDocuments         TraineeDocument[]
+  trainingCourses          TrainingCourse[]
+  trainingModules          TrainingModule[]
+  trainingLessons          TrainingLesson[]
+  assessments              Assessment[]
+  questions                Question[]
+  enrollments              Enrollment[]
+  lessonProgress           LessonProgress[]
+  assessmentAttempts       AssessmentAttempt[]
 }
 
 model Role {
@@ -173,12 +181,168 @@ model Inspection {
   updatedAt        DateTime @updatedAt
 }
 
+model TrainingCourse {
+  id          Int    @id @default(autoincrement())
+  companyId   Int
+  company     Company @relation(fields: [companyId], references: [id])
+  title       String
+  description String?
+  code        String?
+  duration    Int?
+  credits     Int?
+  status      String @default("draft")
+  category    String?
+  tags        String[]
+  modules     TrainingModule[]
+  enrollments Enrollment[]
+  trainings   Training[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([code, companyId])
+}
+
+model TrainingModule {
+  id          Int    @id @default(autoincrement())
+  companyId   Int
+  company     Company @relation(fields: [companyId], references: [id])
+  courseId    Int
+  course      TrainingCourse @relation(fields: [courseId], references: [id])
+  title       String
+  description String?
+  order       Int    @default(0)
+  duration    Int?
+  lessons     TrainingLesson[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TrainingLesson {
+  id          Int    @id @default(autoincrement())
+  companyId   Int
+  company     Company @relation(fields: [companyId], references: [id])
+  moduleId    Int
+  module      TrainingModule @relation(fields: [moduleId], references: [id])
+  title       String
+  description String?
+  content     String?
+  type        String @default("video")
+  order       Int    @default(0)
+  duration    Int?
+  isRequired  Boolean @default(true)
+  resources   String[]
+  assessments Assessment[]
+  progress    LessonProgress[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Assessment {
+  id            Int    @id @default(autoincrement())
+  companyId     Int
+  company       Company @relation(fields: [companyId], references: [id])
+  lessonId      Int?
+  lesson        TrainingLesson? @relation(fields: [lessonId], references: [id])
+  title         String
+  description   String?
+  type          String @default("quiz")
+  passingScore  Int    @default(70)
+  timeLimit     Int?
+  maxAttempts   Int    @default(3)
+  shuffleQuestions Boolean @default(false)
+  questions     Question[]
+  attempts      AssessmentAttempt[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Question {
+  id          Int    @id @default(autoincrement())
+  companyId   Int
+  company     Company @relation(fields: [companyId], references: [id])
+  assessmentId Int
+  assessment  Assessment @relation(fields: [assessmentId], references: [id])
+  text        String
+  type        String @default("multiple_choice")
+  options     Json
+  correctAnswer Json
+  explanation String?
+  points      Int    @default(1)
+  order       Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Enrollment {
+  id           Int    @id @default(autoincrement())
+  companyId    Int
+  company      Company @relation(fields: [companyId], references: [id])
+  courseId     Int
+  course       TrainingCourse @relation(fields: [courseId], references: [id])
+  traineeId    Int
+  trainee      Trainee @relation(fields: [traineeId], references: [id])
+  status       String @default("active")
+  enrolledAt   DateTime @default(now())
+  startedAt    DateTime?
+  completedAt  DateTime?
+  progress     LessonProgress[]
+  assessmentAttempts AssessmentAttempt[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([courseId, traineeId])
+}
+
+model LessonProgress {
+  id           Int    @id @default(autoincrement())
+  companyId    Int
+  company      Company @relation(fields: [companyId], references: [id])
+  enrollmentId Int
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
+  lessonId     Int
+  lesson       TrainingLesson @relation(fields: [lessonId], references: [id])
+  status       String @default("not_started")
+  startedAt    DateTime?
+  completedAt  DateTime?
+  timeSpent    Int    @default(0)
+  assessmentAttempts AssessmentAttempt[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([enrollmentId, lessonId])
+}
+
+model AssessmentAttempt {
+  id            Int    @id @default(autoincrement())
+  companyId     Int
+  company       Company @relation(fields: [companyId], references: [id])
+  assessmentId  Int
+  assessment    Assessment @relation(fields: [assessmentId], references: [id])
+  enrollmentId  Int?
+  enrollment    Enrollment? @relation(fields: [enrollmentId], references: [id])
+  lessonProgressId Int?
+  lessonProgress LessonProgress? @relation(fields: [lessonProgressId], references: [id])
+  traineeId     Int
+  trainee       Trainee @relation(fields: [traineeId], references: [id])
+  score         Int
+  maxScore      Int
+  passed        Boolean
+  answers       Json
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  timeSpent     Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model Training {
   id               Int               @id @default(autoincrement())
   companyId        Int
   company          Company           @relation(fields: [companyId], references: [id])
   jobId            Int
   job              Job               @relation(fields: [jobId], references: [id])
+  courseId         Int?
+  course           TrainingCourse?   @relation(fields: [courseId], references: [id])
   module           String?
   result           String?
   attachments      String[]
@@ -352,6 +516,8 @@ model Trainee {
   status           String            @default("active")
   documents        TraineeDocument[]
   trainingSessions TrainingSession[]
+  enrollments      Enrollment[]
+  assessmentAttempts AssessmentAttempt[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
