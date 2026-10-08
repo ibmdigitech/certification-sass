@@ -207,24 +207,26 @@ model TrainingSession {
 }
 
 model Certificate {
-  id                  Int                       @id @default(autoincrement())
-  companyId           Int
-  company             Company                   @relation(fields: [companyId], references: [id])
-  jobId               Int
-  job                 Job                       @relation(fields: [jobId], references: [id])
-  jobNumber           String
-  sequence            Int
-  number              String                    @unique
-  revision            Int                       @default(0)
-  pdfUrl              String?
-  qrUrl               String?
-  status              String?
-  complianceAuthority String?
-  revisions           Revision[]
-  deliveryLogs        DeliveryLog[]
-  verifications       CertificateVerification[]
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
+  id                      Int                       @id @default(autoincrement())
+  companyId               Int
+  company                 Company                   @relation(fields: [companyId], references: [id])
+  jobId                   Int
+  job                     Job                       @relation(fields: [jobId], references: [id])
+  jobNumber               String
+  sequence                Int
+  number                  String                    @unique
+  revision                Int                       @default(0)
+  pdfUrl                  String?
+  qrUrl                   String?
+  status                  String?
+  complianceAuthority     String?
+  verificationToken       String?                   @unique
+  verificationTokenExpiresAt DateTime?
+  revisions               Revision[]
+  deliveryLogs            DeliveryLog[]
+  verifications           CertificateVerification[]
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
 
   @@unique([jobId, sequence])
 }
