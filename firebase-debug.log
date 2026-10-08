@@ -1,0 +1,5 @@
+<<<<<<< ours
+[debug] [2026-10-07T18:50:55.815Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+=======
+[debug] [2026-10-08T01:59:57.193Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+>>>>>>> theirs
