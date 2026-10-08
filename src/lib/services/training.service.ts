@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -53,8 +54,18 @@ export interface CreateQuestionInput {
   assessmentId: number;
   text: string;
   type?: string;
-  options: Record<string, unknown>;
-  correctAnswer: Record<string, unknown>;
+  options: Prisma.InputJsonValue;
+  correctAnswer: Prisma.InputJsonValue;
+  explanation?: string;
+  points?: number;
+  order?: number;
+}
+
+export interface UpdateQuestionInput {
+  text?: string;
+  type?: string;
+  options?: Prisma.InputJsonValue;
+  correctAnswer?: Prisma.InputJsonValue;
   explanation?: string;
   points?: number;
   order?: number;
@@ -416,7 +427,7 @@ export class QuestionService {
     });
   }
 
-  static async updateQuestion(id: number, companyId: number, data: Partial<CreateQuestionInput>) {
+  static async updateQuestion(id: number, companyId: number, data: UpdateQuestionInput) {
     return prisma.question.update({
       where: { id, companyId },
       data,

@@ -39,10 +39,11 @@ export async function PUT(
 
     const { id } = await params;
     const body: UpdateTraineeInput = await request.json();
-    
+
     const trainee = await traineeService.update({
       ...body,
       id: parseInt(id),
+      hireDate: body.hireDate ? new Date(body.hireDate) : undefined,
     });
 
     return NextResponse.json(trainee);

@@ -14,8 +14,7 @@ interface Trainee {
   email: string | null;
   phone: string | null;
   employeeId: string | null;
-  department: string | null;
-  position: string | null;
+  jobTitle: string | null;
   hireDate: string | null;
   status: string;
   createdAt: string;

@@ -12,6 +12,7 @@ interface InspectionReportCardProps {
     id: number;
     reportNumber: string;
     title: string;
+    version: number;
     status: string;
     createdAt: string | Date;
     job?: { jobNumber: string; customer?: { name: string } };
@@ -66,7 +67,12 @@ export function InspectionReportCard({
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-lg font-medium">{report.title}</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-lg font-medium">{report.title}</CardTitle>
+          <Badge variant="secondary" className="text-xs">
+            v{report.version}
+          </Badge>
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -29,7 +30,8 @@ export interface SubmitAssessmentAttemptInput {
   id: number;
   companyId: number;
   score: number;
-  answers: Record<string, unknown>;
+  maxScore: number;
+  answers: Prisma.InputJsonValue;
   timeSpent: number;
 }
 
@@ -327,6 +329,7 @@ export class AssessmentAttemptService {
         passed: false,
         answers: {},
         startedAt: new Date(),
+        timeSpent: 0,
       },
       include: { assessment: true },
     });
@@ -382,7 +385,7 @@ export class AssessmentAttemptService {
         score,
         maxScore: input.maxScore,
         passed,
-        answers: input.answers,
+        answers: input.answers as Prisma.InputJsonValue,
         completedAt: new Date(),
         timeSpent: input.timeSpent,
       },

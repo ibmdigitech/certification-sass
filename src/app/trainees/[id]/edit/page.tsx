@@ -17,8 +17,7 @@ interface FormData {
   email: string;
   phone: string;
   employeeId: string;
-  department: string;
-  position: string;
+  jobTitle: string;
   hireDate: string;
   status: string;
 }
@@ -29,8 +28,7 @@ const initialFormData: FormData = {
   email: '',
   phone: '',
   employeeId: '',
-  department: '',
-  position: '',
+  jobTitle: '',
   hireDate: '',
   status: 'active',
 };
@@ -91,8 +89,7 @@ export default function EditTraineePage() {
         email: data.email || '',
         phone: data.phone || '',
         employeeId: data.employeeId || '',
-        department: data.department || '',
-        position: data.position || '',
+        jobTitle: data.jobTitle || '',
         hireDate: data.hireDate ? new Date(data.hireDate).toISOString().split('T')[0] : '',
         status: data.status || 'active',
       });
@@ -285,23 +282,10 @@ export default function EditTraineePage() {
               </h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <Select value={formData.department} onValueChange={value => handleChange('department', value)}>
+                  <Label htmlFor="jobTitle">Job Title</Label>
+                  <Select value={formData.jobTitle} onValueChange={value => handleChange('jobTitle', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map(d => (
-                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="position">Position</Label>
-                  <Select value={formData.position} onValueChange={value => handleChange('position', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select position" />
+                      <SelectValue placeholder="Select job title" />
                     </SelectTrigger>
                     <SelectContent>
                       {positions.map(p => (
@@ -312,7 +296,7 @@ export default function EditTraineePage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 mt-4">
                 <Label htmlFor="hireDate">Hire Date</Label>
                 <Input
                   id="hireDate"

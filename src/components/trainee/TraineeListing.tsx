@@ -35,8 +35,7 @@ export interface Trainee {
   email: string | null;
   phone: string | null;
   employeeId: string | null;
-  department: string | null;
-  position: string | null;
+  jobTitle: string | null;
   hireDate: string | null;
   status: string;
   createdAt: string;
@@ -87,13 +86,13 @@ export function TraineeListing({
   const [trainees, setTrainees] = useState<Trainee[]>(initialTrainees);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'firstName' | 'lastName' | 'department' | 'status' | 'createdAt'>('firstName');
+  const [jobTitleFilter, setJobTitleFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'firstName' | 'lastName' | 'jobTitle' | 'status' | 'createdAt'>('firstName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isLoading, setIsLoading] = useState(false);
 
-  const departments = Array.from(
-    new Set(trainees.map(t => t.department).filter(Boolean))
+  const jobTitles = Array.from(
+    new Set(trainees.map(t => t.jobTitle).filter(Boolean))
   ) as string[];
 
   const filteredTrainees = trainees
@@ -110,7 +109,7 @@ export function TraineeListing({
       return true;
     })
     .filter(t => statusFilter === 'all' || t.status === statusFilter)
-    .filter(t => departmentFilter === 'all' || t.department === departmentFilter)
+    .filter(t => jobTitleFilter === 'all' || t.jobTitle === jobTitleFilter)
     .sort((a, b) => {
       const aVal = a[sortBy];
       const bVal = b[sortBy];
@@ -181,14 +180,14 @@ export function TraineeListing({
             </SelectContent>
           </Select>
 
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <Select value={jobTitleFilter} onValueChange={setJobTitleFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Departments" />
+              <SelectValue placeholder="All Job Titles" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              {departments.map(dept => (
-                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              <SelectItem value="all">All Job Titles</SelectItem>
+              {jobTitles.map(title => (
+                <SelectItem key={title} value={title}>{title}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -206,7 +205,7 @@ export function TraineeListing({
             <EmptyState
               icon={Users}
               title="No trainees found"
-              description={search || statusFilter !== 'all' || departmentFilter !== 'all'
+              description={search || statusFilter !== 'all' || jobTitleFilter !== 'all'
                 ? 'Try adjusting your search or filters.'
                 : 'Add your first trainee to begin tracking identity documents, training sessions, and competencies.'}
               action={
@@ -226,9 +225,9 @@ export function TraineeListing({
                         Name <SortIcon field="firstName" />
                       </div>
                     </TableHead>
-                    <TableHead className="cursor-pointer" onClick={() => handleSort('department')}>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort('jobTitle')}>
                       <div className="flex items-center gap-1">
-                        Department <SortIcon field="department" />
+                        Job Title <SortIcon field="jobTitle" />
                       </div>
                     </TableHead>
                     <TableHead className="cursor-pointer" onClick={() => handleSort('status')}>
@@ -256,10 +255,7 @@ export function TraineeListing({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <p className="font-medium">{trainee.department || '—'}</p>
-                        {trainee.position && (
-                          <p className="text-sm text-muted-foreground">{trainee.position}</p>
-                        )}
+                        <p className="font-medium">{trainee.jobTitle || '—'}</p>
                       </TableCell>
                       <TableCell>{getStatusBadge(trainee.status)}</TableCell>
                       <TableCell>

@@ -22,8 +22,7 @@ interface Trainee {
   email: string | null;
   phone: string | null;
   employeeId: string | null;
-  department: string | null;
-  position: string | null;
+  jobTitle: string | null;
   hireDate: string | null;
   status: string;
   documents: Array<{ id: number; name: string; type: string; url: string; expiryDate: string | null; status: string; createdAt: string }>;
@@ -246,17 +245,10 @@ export default function TraineeDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Department</label>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Job Title</label>
                   <p className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    {trainee.department || '—'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Position</label>
-                  <p className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    {trainee.position || '—'}
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                    {trainee.jobTitle || '—'}
                   </p>
                 </div>
                 <div>

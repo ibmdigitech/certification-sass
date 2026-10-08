@@ -51,6 +51,7 @@ interface Report {
   id: number;
   reportNumber: string;
   title: string;
+  version: number;
   status: string;
   createdAt: string;
   job?: { jobNumber: string; customer?: { name: string } };

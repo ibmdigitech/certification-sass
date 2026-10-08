@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 export type TraineeWithRelations = Trainee & {
   documents: TraineeDocument[];
   trainingSessions: (TrainingSession & {
-    training: { module: string | null } | null;
+    Training: { module: string | null } | null;
   })[];
   _count: {
     documents: number;
@@ -20,21 +20,19 @@ export interface CreateTraineeInput {
   email?: string;
   phone?: string;
   employeeId?: string;
-  department?: string;
-  position?: string;
+  jobTitle?: string;
+  status?: string;
   hireDate?: Date;
 }
 
 export interface UpdateTraineeInput extends Partial<CreateTraineeInput> {
   id: number;
-  status?: string;
 }
 
 export interface TraineeFilters {
   companyId: number;
   search?: string;
   status?: string;
-  department?: string;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -54,6 +52,7 @@ export class TraineeService {
     return prisma.trainee.create({
       data: {
         ...data,
+        status: data.status ?? 'active',
         hireDate: data.hireDate ? new Date(data.hireDate) : null,
       },
     });
@@ -65,8 +64,8 @@ export class TraineeService {
       include: {
         documents: { orderBy: { createdAt: 'desc' } },
         trainingSessions: {
-          include: { training: { select: { module: true } } },
-          orderBy: { sessionDate: 'desc' },
+          include: { Training: { select: { module: true } } },
+          orderBy: { startDate: 'desc' },
         },
         _count: {
           select: { documents: true, trainingSessions: true },
@@ -76,7 +75,7 @@ export class TraineeService {
   }
 
   async findMany(filters: TraineeFilters): Promise<PaginatedTrainees> {
-    const { companyId, search, status, department, page = 1, pageSize = 10, sortBy = 'createdAt', sortOrder = 'desc' } = filters;
+    const { companyId, search, status, page = 1, pageSize = 10, sortBy = 'createdAt', sortOrder = 'desc' } = filters;
 
     const where: any = { companyId };
 
@@ -90,7 +89,6 @@ export class TraineeService {
     }
 
     if (status) where.status = status;
-    if (department) where.department = department;
 
     const [trainees, total] = await Promise.all([
       prisma.trainee.findMany({
@@ -98,8 +96,8 @@ export class TraineeService {
         include: {
           documents: { orderBy: { createdAt: 'desc' }, take: 1 },
           trainingSessions: {
-            include: { training: { select: { module: true } } },
-            orderBy: { sessionDate: 'desc' },
+            include: { Training: { select: { module: true } } },
+            orderBy: { startDate: 'desc' },
             take: 1,
           },
           _count: { select: { documents: true, trainingSessions: true } },
@@ -137,13 +135,13 @@ export class TraineeService {
     });
   }
 
-  async getDepartments(companyId: number): Promise<string[]> {
+  async getJobTitles(companyId: number): Promise<string[]> {
     const trainees = await prisma.trainee.findMany({
-      where: { companyId, department: { not: null } },
-      select: { department: true },
-      distinct: ['department'],
+      where: { companyId, jobTitle: { not: null } },
+      select: { jobTitle: true },
+      distinct: ['jobTitle'],
     });
-    return trainees.map(t => t.department!).filter(Boolean);
+    return trainees.map(t => t.jobTitle!).filter(Boolean);
   }
 
   async getStatuses(): Promise<string[]> {

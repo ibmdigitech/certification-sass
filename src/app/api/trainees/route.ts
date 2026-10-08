@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') || '10');
     const search = searchParams.get('search') || undefined;
     const status = searchParams.get('status') || undefined;
-    const department = searchParams.get('department') || undefined;
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
 
@@ -23,7 +22,6 @@ export async function GET(request: NextRequest) {
       companyId: session.user.companyId,
       search,
       status,
-      department,
       page,
       pageSize,
       sortBy,
@@ -45,14 +43,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body: CreateTraineeInput = await request.json();
-    
+const body: CreateTraineeInput = await request.json();
+
     if (!body.firstName || !body.lastName) {
       return NextResponse.json({ error: 'First name and last name are required' }, { status: 400 });
     }
 
     const trainee = await traineeService.create({
       ...body,
+      status: body.status ?? 'active',
+      hireDate: body.hireDate ? new Date(body.hireDate) : undefined,
       companyId: session.user.companyId,
     });
 
