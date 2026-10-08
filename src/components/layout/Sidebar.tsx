@@ -12,13 +12,15 @@ import {
   FileCheck2,
   Settings,
   Menu,
-  X
+  X,
+  Briefcase
 } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Jobs", href: "/jobs", icon: Briefcase },
   { name: "Training", href: "/training", icon: GraduationCap },
   { name: "Trainees", href: "/trainees", icon: Users },
   { name: "Inspections", href: "/inspections", icon: ClipboardCheck },
