@@ -63,17 +63,49 @@
     const indicator = document.getElementById('online-indicator');
     const statusText = document.getElementById('status-text');
 
-    function updateOnlineStatus() {
-      if (navigator.onLine) {
-        indicator.className = 'w-3 h-3 rounded-full bg-emerald-500';
-        statusText.textContent = 'Online - Syncing...';
-        statusText.className = 'text-emerald-400';
-        setTimeout(() => window.location.reload(), 1000);
-      } else {
-        indicator.className = 'w-3 h-3 rounded-full bg-slate-500 animate-pulse-slow';
-        statusText.textContent = 'Offline - Waiting for connection...';
-        statusText.className = 'text-slate-300';
+    // navigator.onLine only reports interface status, not reachability.
+    // It is true here even though the dev server is gone, which is why the
+    // page rendered as "You're Offline" while showing a green "Online" dot.
+    let reloadAttempts = 0;
+    const MAX_RELOADS = 3;
+
+    async function probeReachability() {
+      try {
+        const res = await fetch('/', {
+          method: 'GET',
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        return res.ok;
+      } catch {
+        return false;
       }
+    }
+
+    async function updateOnlineStatus() {
+      const reachable = await probeReachability();
+
+      if (reachable) {
+        indicator.className = 'w-3 h-3 rounded-full bg-emerald-500';
+        statusText.textContent = 'Online - Reconnecting...';
+        statusText.className = 'text-emerald-400';
+        // Guard against an infinite reload loop when the server is unreachable
+        // but the network interface still reports online.
+        if (reloadAttempts < MAX_RELOADS) {
+          reloadAttempts++;
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          statusText.textContent = 'Server unreachable - click Try Reconnecting';
+          statusText.className = 'text-amber-400';
+        }
+        return;
+      }
+
+      indicator.className = 'w-3 h-3 rounded-full bg-slate-500 animate-pulse-slow';
+      statusText.textContent = navigator.onLine
+        ? 'Offline - Server unreachable'
+        : 'Offline - Waiting for connection...';
+      statusText.className = 'text-slate-300';
     }
 
     function navigateToCached() {

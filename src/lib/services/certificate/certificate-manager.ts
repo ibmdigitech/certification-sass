@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { PrismaClient } from '@prisma/client';
 import { CertificateService } from '../certificate.service';
 import { QRCodeService } from './qr-code.service';
 import { PDFGenerationService } from './pdf-generation.service';
@@ -19,6 +19,7 @@ export interface CompleteCertificateData {
   generateQRCode?: boolean;
   generateSignature?: boolean;
   status?: 'draft' | 'issued';
+  jobServiceId?: number;
 }
 
 export interface CertificateWithDetails {
@@ -42,6 +43,7 @@ export class CertificateManager {
       generateQRCode = true,
       generateSignature = true,
       status = 'issued',
+      jobServiceId,
     } = data;
 
     const certificate = await CertificateService.createCertificate({
@@ -50,6 +52,7 @@ export class CertificateManager {
       traineeId,
       complianceAuthority,
       status: 'draft',
+      jobServiceId,
     });
 
     let pdfUrl: string | undefined;
@@ -75,7 +78,7 @@ export class CertificateManager {
       ) as Buffer;
 
       const pdfBase64 = pdfBuffer.toString('base64');
-      pdfUrl = `data:application/pdf;base64,${pdfBase64}`;
+      pdfUrl = data:application/pdf;base64,;
 
       await prisma.certificate.update({
         where: { id: certificate.id },
@@ -88,7 +91,7 @@ export class CertificateManager {
       });
     }
 
-    const verificationUrl = `${baseUrl}/verify/${certificate.number}`;
+    const verificationUrl = ${baseUrl}/verify/;
 
     return {
       certificate,
@@ -107,7 +110,7 @@ export class CertificateManager {
 
     return {
       certificate,
-      verificationUrl: `${base}/verify/${certificate.number}`,
+      verificationUrl: ${base}/verify/,
       qrCodeUrl: certificate.qrUrl,
       pdfUrl: certificate.pdfUrl,
       verifications: certificate.verifications,
@@ -200,19 +203,22 @@ export class CertificateManager {
   static async searchCertificates(companyId: number, query: string, options?: {
     status?: string;
     jobId?: number;
+    certificateType?: string;
     page?: number;
     limit?: number;
   }) {
-    const { status, jobId, page = 1, limit = 20 } = options ?? {};
+    const { status, jobId, certificateType, page = 1, limit = 20 } = options ?? {};
 
     const where: Record<string, unknown> = { companyId };
     if (status) where.status = status;
     if (jobId) where.jobId = jobId;
+    if (certificateType) where.certificateType = certificateType;
     
     if (query) {
       where.OR = [
         { number: { contains: query, mode: 'insensitive' } },
         { jobNumber: { contains: query, mode: 'insensitive' } },
+        { holderName: { contains: query, mode: 'insensitive' } },
       ];
     }
 
@@ -270,7 +276,7 @@ export class CertificateManager {
         c.pdfUrl ?? '',
         c.verifications?.length ?? 0,
       ]);
-      return [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      return [headers, ...rows].map(r => r.map(v => "").join(',')).join('\n');
     }
 
     return certificates;

@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
@@ -12,8 +14,12 @@ interface SyncRequest {
     data: unknown;
     conflictResolution?: 'server-wins' | 'client-wins' | 'merge';
     timestamp: number;
+    idempotencyKey?: string;
+    dependsOnEntityType?: string;
+    dependsOnEntityId?: number;
   }>;
   clientVersion: number;
+  trace?: string;
 }
 
 interface ConflictResponse {
@@ -34,6 +40,7 @@ type ModelDelegate = {
 function getModel(entity: string): ModelDelegate | null {
   const models: Record<string, ModelDelegate> = {
     jobs: prisma.job as unknown as ModelDelegate,
+    jobServices: prisma.jobService as unknown as ModelDelegate,
     certificates: prisma.certificate as unknown as ModelDelegate,
     trainees: prisma.trainee as unknown as ModelDelegate,
     inspections: prisma.inspection as unknown as ModelDelegate,
@@ -42,6 +49,7 @@ function getModel(entity: string): ModelDelegate | null {
     customers: prisma.customer as unknown as ModelDelegate,
     users: prisma.user as unknown as ModelDelegate,
     companies: prisma.company as unknown as ModelDelegate,
+    locations: prisma.location as unknown as ModelDelegate,
   };
   return models[entity] || null;
 }
@@ -49,7 +57,7 @@ function getModel(entity: string): ModelDelegate | null {
 async function applyMutation(mutation: SyncRequest['mutations'][0], companyId: number) {
   const model = getModel(mutation.entity);
   if (!model) {
-    throw new Error(`Unknown entity: ${mutation.entity}`);
+    throw new Error(Unknown entity: );
   }
 
   switch (mutation.type) {
@@ -88,35 +96,58 @@ async function checkConflict(mutation: SyncRequest['mutations'][0], companyId: n
     const serverTime = new Date(serverUpdatedAt as string).getTime();
     const clientTime = new Date(clientUpdatedAt as string).getTime();
     if (serverTime > clientTime) {
-      return {
-        conflict: true,
-        entity: mutation.entity,
-        entityId: mutation.entityId,
-        serverData,
-        clientData,
-      };
+      return { conflict: true, entity: mutation.entity, entityId: mutation.entityId, serverData, clientData };
     }
   }
 
   return null;
 }
 
+async function isDuplicate(idempotencyKey: string | undefined, companyId: number): Promise<boolean> {
+  if (!idempotencyKey) return false;
+  const existing = await prisma.syncQueue.findFirst({
+    where: { idempotencyKey, status: 'SYNCED', companyId },
+  });
+  return !!existing;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
+    const userId = session.user.id;
+
     const body: SyncRequest = await request.json();
-    const { mutations, clientVersion } = body;
+    const { mutations, clientVersion, trace } = body;
+    const traceId = trace || sync-;
 
-    const companyId = 1;
+    const url = new URL(request.url);
+    const traceParam = url.searchParams.get('trace');
+    const traceLabel = traceId + (traceParam ? - : '');
 
-    const results = [];
+    const results: Array<{ id: string; success: boolean; data?: unknown; merged?: boolean; conflict?: boolean; skipped?: boolean }> = [];
     const conflicts: ConflictResponse[] = [];
 
     for (const mutation of mutations) {
+      const isDup = await isDuplicate(mutation.idempotencyKey, companyId);
+      if (isDup) {
+        results.push({ id: mutation.id, success: true, skipped: true });
+        continue;
+      }
+
       const conflict = await checkConflict(mutation, companyId);
+      let applied = false;
+      let resultData: unknown = undefined;
+      let merged = false;
+
       if (conflict) {
         if (mutation.conflictResolution === 'client-wins') {
           const result = await applyMutation(mutation, companyId);
-          results.push({ id: mutation.id, success: true, data: result });
+          applied = true;
+          resultData = result;
         } else if (mutation.conflictResolution === 'merge') {
           const serverData = conflict.serverData as Record<string, unknown>;
           const clientData = conflict.clientData as Record<string, unknown>;
@@ -124,14 +155,39 @@ export async function POST(request: NextRequest) {
           delete mergedData.id;
           delete mergedData.createdAt;
           const result = await applyMutation({ ...mutation, data: mergedData }, companyId);
-          results.push({ id: mutation.id, success: true, data: result, merged: true });
+          applied = true;
+          resultData = result;
+          merged = true;
         } else {
+          // server-wins or default: do not apply mutation, treat as conflict
           conflicts.push(conflict);
           results.push({ id: mutation.id, success: false, conflict: true });
+          continue;
         }
       } else {
         const result = await applyMutation(mutation, companyId);
-        results.push({ id: mutation.id, success: true, data: result });
+        applied = true;
+        resultData = result;
+      }
+
+      if (applied) {
+        // Create SyncQueue entry to record successful sync
+        await prisma.syncQueue.create({
+          data: {
+            companyId,
+            userId,
+            entityType: mutation.entity,
+            entityId: mutation.entityId ? Number(mutation.entityId) : null,
+            operation: mutation.type.toUpperCase() as 'CREATE' | 'UPDATE' | 'DELETE',
+            payload: mutation.data,
+            idempotencyKey: mutation.idempotencyKey,
+            dependsOnEntityType: mutation.dependsOnEntityType,
+            dependsOnEntityId: mutation.dependsOnEntityId,
+            status: 'SYNCED',
+          },
+        });
+
+        results.push({ id: mutation.id, success: true, data: resultData, merged });
       }
     }
 
@@ -140,6 +196,7 @@ export async function POST(request: NextRequest) {
       results,
       conflicts: conflicts.length > 0 ? conflicts : undefined,
       serverVersion: Date.now(),
+      trace: traceLabel,
     });
   } catch (error) {
     console.error('Sync error:', error);

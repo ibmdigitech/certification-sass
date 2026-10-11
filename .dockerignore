@@ -5,3 +5,12 @@ dist
 .env
 .DS_Store
 npm-debug.log
+.github
+.kilo
+deploy
+docs
+tests
+*.md
+*.log
+firebase-debug.log
+tsconfig.tsbuildinfo

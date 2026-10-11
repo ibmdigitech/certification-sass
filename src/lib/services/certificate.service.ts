@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { PrismaClient } from '@prisma/client';
 import { CertificateNumberService } from './certificate-number.service';
 
 const prisma = new PrismaClient();
@@ -9,6 +9,7 @@ export interface CreateCertificateInput {
   traineeId?: number;
   complianceAuthority?: string;
   status?: string;
+  jobServiceId?: number;
 }
 
 export class CertificateService {
@@ -27,6 +28,7 @@ export class CertificateService {
         number: certificateNumber,
         status: input.status ?? 'draft',
         complianceAuthority: input.complianceAuthority,
+        jobServiceId: input.jobServiceId,
       },
       include: {
         job: {
@@ -90,14 +92,24 @@ export class CertificateService {
   static async listCertificates(companyId: number, options?: {
     jobId?: number;
     status?: string;
+    certificateType?: string;
+    search?: string;
     page?: number;
     limit?: number;
   }) {
-    const { jobId, status, page = 1, limit = 20 } = options ?? {};
+    const { jobId, status, certificateType, search, page = 1, limit = 20 } = options ?? {};
 
     const where: Record<string, unknown> = { companyId };
     if (jobId) where.jobId = jobId;
     if (status) where.status = status;
+    if (certificateType) where.certificateType = certificateType;
+    if (search) {
+      where.OR = [
+        { number: { contains: search, mode: 'insensitive' } },
+        { holderName: { contains: search, mode: 'insensitive' } },
+        { holderCompany: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     const [certificates, total] = await Promise.all([
       prisma.certificate.findMany({

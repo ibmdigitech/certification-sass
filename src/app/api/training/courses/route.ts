@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { TrainingCourseService } from '@/lib/services/training.service';
+import { validateLocationAccreditation } from '@/lib/validation/location-accreditation';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,10 +19,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const status = searchParams.get('status') || undefined;
     const category = searchParams.get('category') || undefined;
+    const search = searchParams.get('search') || undefined;
+    const activeOnly = searchParams.get('activeOnly') === 'true';
 
     const result = await TrainingCourseService.listCourses(session.user.companyId, {
       status,
       category,
+      search,
+      activeOnly,
       page,
       limit,
     });
@@ -38,6 +46,35 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+
+    // Validate location-accreditation combination
+    if (body.locationId) {
+      const location = await prisma.location.findFirst({
+        where: { id: body.locationId, companyId: session.user.companyId },
+        select: { code: true },
+      });
+      if (!location) {
+        return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+      }
+
+      let accreditationCode: string | undefined;
+      if (body.accreditationId) {
+        const accred = await prisma.accreditationAuthority.findFirst({
+          where: { id: body.accreditationId, companyId: session.user.companyId },
+          select: { code: true },
+        });
+        if (!accred) {
+          return NextResponse.json({ error: 'Accreditation authority not found' }, { status: 404 });
+        }
+        accreditationCode = accred.code;
+      }
+
+      const validation = validateLocationAccreditation(location.code, accreditationCode);
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+    }
+
     const course = await TrainingCourseService.createCourse({
       companyId: session.user.companyId,
       ...body,

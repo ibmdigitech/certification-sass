@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { offlineMutationQueue, QueueStatus } from '@/lib/offline/mutation-queue';
@@ -19,6 +19,9 @@ interface OfflineContextType {
     type: 'create' | 'update' | 'delete';
     data: unknown;
     conflictResolution?: 'server-wins' | 'client-wins' | 'merge';
+    idempotencyKey?: string;
+    dependsOnEntityType?: string;
+    dependsOnEntityId?: number;
   }) => Promise<number>;
   processQueue: () => Promise<{ success: boolean; syncedCount: number; failedCount: number }>;
   retryFailed: () => Promise<void>;
@@ -148,6 +151,9 @@ function OfflineProviderInternal({ children }: { children: ReactNode }): React.R
     type: 'create' | 'update' | 'delete';
     data: unknown;
     conflictResolution?: 'server-wins' | 'client-wins' | 'merge';
+    idempotencyKey?: string;
+    dependsOnEntityType?: string;
+    dependsOnEntityId?: number;
   }) => {
     const id = await offlineMutationQueue.enqueue(options);
     updateQueueStatus();

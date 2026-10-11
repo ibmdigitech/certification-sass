@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { InspectionReportService } from '@/lib/services';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '1');
     const jobId = searchParams.get('jobId') ? parseInt(searchParams.get('jobId')!) : undefined;
     const reportId = searchParams.get('reportId') ? parseInt(searchParams.get('reportId')!) : undefined;
     const status = searchParams.get('status') || undefined;
@@ -30,11 +36,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const body = await request.json();
-    const { companyId, reportId, jobId, type, title, description, priority, assignedTo, dueDate, rootCause, correctiveAction, preventiveAction } = body;
+    const { reportId, jobId, type, title, description, priority, assignedTo, dueDate, rootCause, correctiveAction, preventiveAction } = body;
 
     if (!companyId || !reportId || !jobId || !type || !title) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Ensure companyId matches session companyId for security
+    if (body.companyId && body.companyId !== companyId) {
+      return NextResponse.json({ error: 'Cannot use a different tenant' }, { status: 403 });
     }
 
     const workflow = await InspectionReportService.createFailureWorkflow({

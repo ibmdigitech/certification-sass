@@ -13,6 +13,17 @@ export interface CreateCourseInput {
   status?: string;
   category?: string;
   tags?: string[];
+  courseType?: string;
+  trainingHours?: number;
+  assessmentRequired?: boolean;
+  practicalAssessmentRequired?: boolean;
+  certificateValidityMonths?: number;
+  trainerRequirements?: string;
+  locationId?: number;
+  accreditationId?: number;
+  version?: string;
+  createdBy?: number;
+  updatedBy?: number;
 }
 
 export interface CreateModuleInput {
@@ -79,17 +90,35 @@ export interface CreateEnrollmentInput {
 
 export class TrainingCourseService {
   static async createCourse(input: CreateCourseInput) {
+    const {
+      companyId, title, description, code, duration, credits, status,
+      category, tags, courseType, trainingHours, assessmentRequired,
+      practicalAssessmentRequired, certificateValidityMonths, trainerRequirements,
+      locationId, accreditationId, version, createdBy, updatedBy,
+    } = input;
+
     return prisma.trainingCourse.create({
       data: {
-        companyId: input.companyId,
-        title: input.title,
-        description: input.description,
-        code: input.code,
-        duration: input.duration,
-        credits: input.credits,
-        status: input.status ?? 'draft',
-        category: input.category,
-        tags: input.tags ?? [],
+        companyId,
+        title,
+        description,
+        code,
+        duration,
+        credits,
+        status: status ?? 'DRAFT',
+        category,
+        courseType,
+        trainingHours,
+        assessmentRequired: assessmentRequired ?? false,
+        practicalAssessmentRequired: practicalAssessmentRequired ?? false,
+        certificateValidityMonths,
+        trainerRequirements,
+        locationId,
+        accreditationId,
+        version: version ?? '1.0',
+        createdBy,
+        updatedBy,
+        tags: tags ?? [],
       },
     });
   }
@@ -122,14 +151,24 @@ export class TrainingCourseService {
   static async listCourses(companyId: number, options?: {
     status?: string;
     category?: string;
+    search?: string;
+    activeOnly?: boolean;
     page?: number;
     limit?: number;
   }) {
-    const { status, category, page = 1, limit = 20 } = options ?? {};
+    const { status, category, search, activeOnly, page = 1, limit = 20 } = options ?? {};
 
     const where: Record<string, unknown> = { companyId };
     if (status) where.status = status;
     if (category) where.category = category;
+    if (activeOnly) where.status = 'ACTIVE';
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     const [courses, total] = await Promise.all([
       prisma.trainingCourse.findMany({
@@ -137,7 +176,7 @@ export class TrainingCourseService {
         include: {
           _count: { select: { enrollments: true, modules: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { title: 'asc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -148,9 +187,36 @@ export class TrainingCourseService {
   }
 
   static async updateCourse(id: number, companyId: number, data: Partial<CreateCourseInput>) {
+    const {
+      title, description, code, duration, credits, status,
+      category, tags, courseType, trainingHours, assessmentRequired,
+      practicalAssessmentRequired, certificateValidityMonths, trainerRequirements,
+      locationId, accreditationId, version, createdBy, updatedBy,
+    } = data;
+
     return prisma.trainingCourse.update({
       where: { id, companyId },
-      data,
+      data: {
+        title,
+        description,
+        code,
+        duration,
+        credits,
+        status,
+        category,
+        courseType,
+        trainingHours,
+        assessmentRequired,
+        practicalAssessmentRequired,
+        certificateValidityMonths,
+        trainerRequirements,
+        locationId,
+        accreditationId,
+        version,
+        createdBy,
+        updatedBy,
+        tags,
+      },
     });
   }
 

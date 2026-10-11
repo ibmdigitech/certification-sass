@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/layout/AppShell";
+import { Providers } from "@/components/providers";
 import { OfflineProviderWrapper } from "@/components/offline/OfflineProviderWrapper";
 import "./globals.css";
 
@@ -16,25 +16,24 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#3b82f6" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="CertAI" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
       </head>
       <body>
-        <OfflineProviderWrapper>
-          <AppShell>{children}</AppShell>
-        </OfflineProviderWrapper>
+        <Providers>
+          <OfflineProviderWrapper>
+            {children}
+          </OfflineProviderWrapper>
+        </Providers>
         <script
           dangerouslySetInnerHTML={{
             __html: `

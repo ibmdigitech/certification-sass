@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { InspectionReportService } from '@/lib/services';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '1');
     const jobId = searchParams.get('jobId') ? parseInt(searchParams.get('jobId')!) : undefined;
     const inspectionId = searchParams.get('inspectionId') ? parseInt(searchParams.get('inspectionId')!) : undefined;
     const status = searchParams.get('status') || undefined;
@@ -28,11 +34,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const body = await request.json();
-    const { companyId, jobId, inspectionId, templateId, title, generatedBy, content, findings, recommendations } = body;
+    const { jobId, inspectionId, templateId, title, generatedBy, content, findings, recommendations } = body;
 
     if (!companyId || !jobId || !inspectionId || !title) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Ensure companyId matches session companyId for security
+    if (body.companyId && body.companyId !== companyId) {
+      return NextResponse.json({ error: 'Cannot use a different tenant' }, { status: 403 });
     }
 
     const report = await InspectionReportService.createInspectionReport({

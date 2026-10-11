@@ -1,11 +1,11 @@
-import { PrismaClient, Trainee, TraineeDocument, TrainingSession } from '@prisma/client';
+import { PrismaClient, Trainee, TraineeDocument, TrainingSession, Training } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export type TraineeWithRelations = Trainee & {
   documents: TraineeDocument[];
   trainingSessions: (TrainingSession & {
-    Training: { module: string | null } | null;
+    training: { module: string | null } | null;
   })[];
   _count: {
     documents: number;
@@ -64,7 +64,7 @@ export class TraineeService {
       include: {
         documents: { orderBy: { createdAt: 'desc' } },
         trainingSessions: {
-          include: { Training: { select: { module: true } } },
+          include: { training: { select: { module: true } } },
           orderBy: { startDate: 'desc' },
         },
         _count: {
@@ -96,7 +96,7 @@ export class TraineeService {
         include: {
           documents: { orderBy: { createdAt: 'desc' }, take: 1 },
           trainingSessions: {
-            include: { Training: { select: { module: true } } },
+            include: { training: { select: { module: true } } },
             orderBy: { startDate: 'desc' },
             take: 1,
           },

@@ -1,23 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { CertificateManager } from '@/lib/services/certificate/certificate-manager';
 import { CertificateService } from '@/lib/services/certificate.service';
 
 export async function GET(request: NextRequest) {
   try {
-    const companyId = 1; // Default company for testing
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') ?? '1');
     const limit = parseInt(searchParams.get('limit') ?? '20');
     const jobId = searchParams.get('jobId') ? parseInt(searchParams.get('jobId')!) : undefined;
     const status = searchParams.get('status') ?? undefined;
-    const query = searchParams.get('q') ?? undefined;
+    const query = searchParams.get('q') ?? searchParams.get('search') ?? undefined;
+    const certificateType = searchParams.get('certificateType') ?? undefined;
 
     let result;
     if (query) {
-      result = await CertificateManager.searchCertificates(companyId, query, { status, jobId, page, limit });
+      result = await CertificateManager.searchCertificates(companyId, query, { status, jobId, certificateType, page, limit });
     } else {
-      result = await CertificateService.listCertificates(companyId, { jobId, status, page, limit });
+      result = await CertificateService.listCertificates(companyId, { jobId, status, certificateType, search: query, page, limit });
     }
 
     return NextResponse.json(result);
@@ -29,10 +36,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const companyId = 1; // Default company for testing
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const body = await request.json();
 
-    const { jobId, traineeId, complianceAuthority, templateId, generatePDF, generateQRCode, generateSignature, status } = body;
+    const { jobId, traineeId, complianceAuthority, templateId, generatePDF, generateQRCode, generateSignature, status, jobServiceId } = body;
 
     if (!jobId) {
       return NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
@@ -48,6 +59,7 @@ export async function POST(request: NextRequest) {
       generateQRCode,
       generateSignature,
       status,
+      jobServiceId,
     });
 
     return NextResponse.json(result, { status: 201 });

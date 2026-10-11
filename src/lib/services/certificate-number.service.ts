@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +9,7 @@ export class CertificateNumberService {
     sequence: number;
     jobNumber: string;
   }> {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const job = await tx.job.findUnique({
         where: { id: jobId },
         select: { jobNumber: true, companyId: true },

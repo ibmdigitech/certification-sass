@@ -1,4 +1,4 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+﻿import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
 interface CachedDataValue {
   key: string;
@@ -18,6 +18,9 @@ interface MutationQueueValue {
   retryCount: number;
   synced: boolean;
   conflictResolution?: 'server-wins' | 'client-wins' | 'merge';
+  idempotencyKey?: string;
+  dependsOnEntityType?: string;
+  dependsOnEntityId?: number;
 }
 
 interface ConflictLogValue {
@@ -45,7 +48,7 @@ let dbInstance: IDBPDatabase | null = null;
 export async function getDB(): Promise<IDBPDatabase> {
   if (dbInstance) return dbInstance;
 
-  dbInstance = await openDB('certai-offline', 2, {
+  dbInstance = await openDB('certai-offline', 3, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         const cacheStore = db.createObjectStore('cachedData', { keyPath: 'key' });
@@ -63,6 +66,11 @@ export async function getDB(): Promise<IDBPDatabase> {
       }
       if (oldVersion < 2) {
         db.createObjectStore('offlineState', { keyPath: 'key' });
+      }
+      if (oldVersion < 3) {
+        const queueStore = db.transaction('mutationQueue', 'readwrite').objectStore('mutationQueue');
+        queueStore.createIndex('by-idempotencyKey', 'idempotencyKey', { unique: true });
+        queueStore.createIndex('by-depends', ['dependsOnEntityType', 'dependsOnEntityId']);
       }
     },
   });
@@ -127,12 +135,18 @@ export interface QueuedMutation {
   retryCount: number;
   synced: boolean;
   conflictResolution?: 'server-wins' | 'client-wins' | 'merge';
+  idempotencyKey?: string;
+  dependsOnEntityType?: string;
+  dependsOnEntityId?: number;
 }
 
 export async function queueMutation(mutation: Omit<QueuedMutation, 'id' | 'timestamp' | 'retryCount' | 'synced'>): Promise<number> {
   const db = await getDB();
+  // Generate idempotencyKey if not provided
+  const idempotencyKey = mutation.idempotencyKey ?? crypto.randomUUID();
   const id = await db.add('mutationQueue', {
     ...mutation,
+    idempotencyKey,
     timestamp: Date.now(),
     retryCount: 0,
     synced: false,

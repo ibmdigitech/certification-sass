@@ -1,4 +1,4 @@
-import { queueMutation, getQueuedMutations, markMutationSynced, deleteMutation, incrementRetryCount, updateMutation } from './indexeddb';
+﻿import { queueMutation, getQueuedMutations, markMutationSynced, deleteMutation, incrementRetryCount, updateMutation } from './indexeddb';
 
 export interface MutationOptions {
   entity: string;
@@ -9,6 +9,9 @@ export interface MutationOptions {
   onSuccess?: (serverResponse: unknown) => void;
   onError?: (error: Error) => void;
   onConflict?: (serverData: unknown, clientData: unknown) => Promise<'server-wins' | 'client-wins' | 'merge'>;
+  idempotencyKey?: string;
+  dependsOnEntityType?: string;
+  dependsOnEntityId?: number;
 }
 
 export interface SyncResult {
@@ -69,6 +72,9 @@ class OfflineMutationQueue {
       entityId: options.entityId,
       data: options.data,
       conflictResolution: options.conflictResolution || 'server-wins',
+      idempotencyKey: options.idempotencyKey,
+      dependsOnEntityType: options.dependsOnEntityType,
+      dependsOnEntityId: options.dependsOnEntityId,
     });
 
     this.notifyListeners();
@@ -111,7 +117,7 @@ class OfflineMutationQueue {
       } catch (error) {
         await incrementRetryCount(mutation.id!);
         failedCount++;
-        console.error(`[OfflineQueue] Failed to sync mutation ${mutation.id}:`, error);
+        console.error('[OfflineQueue] Failed to sync mutation:', error);
       }
     }
 
@@ -122,14 +128,14 @@ class OfflineMutationQueue {
   }
 
   private async syncMutation(mutation: Awaited<ReturnType<typeof getQueuedMutations>>[0]): Promise<{ conflict?: SyncResult['conflicts'][0] }> {
-    const { type, entity, entityId, data } = mutation;
+    const { type, entity, entityId, data, idempotencyKey, dependsOnEntityType, dependsOnEntityId } = mutation;
     const baseUrl = '/api';
 
-    let url = `${baseUrl}/${entity}`;
+let url = `${baseUrl}/`;
     let method = type === 'create' ? 'POST' : type === 'update' ? 'PUT' : 'DELETE';
 
     if (entityId && (type === 'update' || type === 'delete')) {
-      url = `${baseUrl}/${entity}/${entityId}`;
+      url = `${baseUrl}//`;
     }
 
     const headers: HeadersInit = {
@@ -139,6 +145,13 @@ class OfflineMutationQueue {
     if (mutation.conflictResolution) {
       headers['X-Conflict-Resolution'] = mutation.conflictResolution;
     }
+
+    // Add idempotency key header if present
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    // TODO: Add depends headers if needed? The API may expect them in body or headers.
+    // For now, we rely on the SyncQueue storing them.
 
     const response = await fetch(url, {
       method,
@@ -153,7 +166,7 @@ class OfflineMutationQueue {
     }
 
     if (!response.ok) {
-      throw new Error(`Sync failed: ${response.status} ${response.statusText}`);
+      throw new Error(Sync failed:  );
     }
 
     const serverResponse = await response.json();
@@ -182,13 +195,15 @@ class OfflineMutationQueue {
   private async forceClientUpdate(mutation: Awaited<ReturnType<typeof getQueuedMutations>>[0], conflict: SyncResult['conflicts'][0]): Promise<void> {
     const { entity, entityId, data } = mutation;
     const baseUrl = '/api';
-    const url = `${baseUrl}/${entity}/${entityId}?force=true`;
+    const url = ${baseUrl}//?force=true;
 
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'X-Conflict-Resolution': 'client-wins',
+        // Include idempotency key if present
+        ...(mutation.idempotencyKey ? { 'Idempotency-Key': mutation.idempotencyKey } : {}),
       },
       body: JSON.stringify(data),
       credentials: 'include',
@@ -207,6 +222,10 @@ class OfflineMutationQueue {
     await updateMutation(mutation.id!, {
       data: mergedData,
       conflictResolution: 'client-wins',
+      // Preserve idempotency key and depends fields
+      idempotencyKey: mutation.idempotencyKey,
+      dependsOnEntityType: mutation.dependsOnEntityType,
+      dependsOnEntityId: mutation.dependsOnEntityId,
     });
 
     await this.processQueue();

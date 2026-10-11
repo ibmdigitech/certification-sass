@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { JobService } from '@/lib/services/job.service';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { JobService, CreateJobInput } from '@/lib/services/job.service';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { searchParams } = new URL(request.url);
-    const companyId = Number(searchParams.get('companyId') || '1');
     const status = searchParams.get('status') || undefined;
     const customerId = searchParams.get('customerId') ? Number(searchParams.get('customerId')) : undefined;
     const engineerId = searchParams.get('engineerId') ? Number(searchParams.get('engineerId')) : undefined;
+    const serviceType = searchParams.get('serviceType') || undefined;
     const page = Number(searchParams.get('page') || '1');
     const limit = Number(searchParams.get('limit') || '20');
 
@@ -15,6 +22,7 @@ export async function GET(request: NextRequest) {
       status,
       customerId,
       engineerId,
+      serviceType,
       page,
       limit,
     });
@@ -28,25 +36,45 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const body = await request.json();
-    const { companyId, customerId, type, scheduledDate, engineerId, jobNumber } = body;
 
-    if (!companyId || !customerId) {
-      return NextResponse.json({ error: 'companyId and customerId are required' }, { status: 400 });
+    if (!body.customerId) {
+      return NextResponse.json({ error: 'customerId is required' }, { status: 400 });
     }
 
     const job = await JobService.createJob({
       companyId,
-      customerId,
-      type,
-      scheduledDate: scheduledDate ? new Date(scheduledDate) : undefined,
-      engineerId,
-      jobNumber,
-    });
+      customerId: Number(body.customerId),
+      locationId: body.locationId ? Number(body.locationId) : undefined,
+      customerReference: body.customerReference,
+      quotationId: body.quotationId,
+      priority: body.priority,
+      site: body.site,
+      contactName: body.contactName,
+      contactPhone: body.contactPhone,
+      contactEmail: body.contactEmail,
+      scheduledDate: body.scheduledDate ? new Date(body.scheduledDate) : undefined,
+      engineerId: body.engineerId ? Number(body.engineerId) : undefined,
+      inspectorId: body.inspectorId ? Number(body.inspectorId) : undefined,
+      assets: body.assets,
+      notes: body.notes,
+      scope: body.scope,
+      internalRemarks: body.internalRemarks,
+      jobNumber: body.jobNumber,
+      services: body.services,
+      type: body.type,
+    } as CreateJobInput);
 
     return NextResponse.json(job, { status: 201 });
   } catch (error) {
     console.error('Error creating job:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to create job' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to create job';
+    const status = message.includes('already exists') || message.includes('not found') || message.includes('valid') || message.includes('required') ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

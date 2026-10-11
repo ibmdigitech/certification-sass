@@ -16,3 +16,7 @@ export { DigitalSignatureService } from './certificate/digital-signature.service
 export { PDFGenerationService } from './certificate/pdf-generation.service';
 export { QRCodeService as CertificateQRCodeService } from './certificate/qr-code.service';
 export { VerificationService as CertificateVerificationService } from './certificate/verification.service';
+export { CompetencyService, TraineeCompetencyService, CourseCompetencyService, type CreateCompetencyInput, type CompetencyFilters, type PaginatedCompetencies } from './competency.service';
+export { trainingSessionService, type CreateSessionInput, type SessionFilters } from './session.service';
+export { aiService } from '@/lib/ai';
+export { openRouter, type AIModel, type OpenRouterMessage, type OpenRouterRequest, type OpenRouterResponse, AI_MODELS, getRecommendedModel } from '@/lib/ai';

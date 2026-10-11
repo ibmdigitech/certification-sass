@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -6,9 +6,9 @@ export class JobNumberService {
   private static readonly PREFIX = 'TSC-';
   private static readonly MIN_NUMBER = 1000000;
 
-  static async generateJobNumber(companyId: number): Promise<string> {
-    return await prisma.$transaction(async (tx) => {
-      const lastJob = await tx.job.findFirst({
+  static async generateJobNumber(companyId: number, txClient?: Prisma.TransactionClient): Promise<string> {
+    const db = txClient || prisma;
+    const lastJob = await db.job.findFirst({
         where: { companyId },
         orderBy: { id: 'desc' },
         select: { jobNumber: true },
@@ -25,7 +25,7 @@ export class JobNumberService {
 
       const jobNumber = `${JobNumberService.PREFIX}${nextNumber}`;
 
-      const existing = await tx.job.findUnique({
+      const existing = await db.job.findUnique({
         where: { jobNumber },
       });
 
@@ -34,18 +34,18 @@ export class JobNumberService {
       }
 
       return jobNumber;
-    });
   }
 
-  static async validateJobNumber(jobNumber: string, companyId: number): Promise<boolean> {
-    const existing = await prisma.job.findFirst({
+  static async validateJobNumber(jobNumber: string, companyId: number, txClient?: Prisma.TransactionClient): Promise<boolean> {
+    const db = txClient || prisma;
+    const existing = await db.job.findFirst({
       where: { jobNumber, companyId },
     });
     return !existing;
   }
 
-  static async reserveJobNumber(jobNumber: string, companyId: number): Promise<void> {
-    const isValid = await this.validateJobNumber(jobNumber, companyId);
+  static async reserveJobNumber(jobNumber: string, companyId: number, txClient?: Prisma.TransactionClient): Promise<void> {
+    const isValid = await this.validateJobNumber(jobNumber, companyId, txClient);
     if (!isValid) {
       throw new Error(`Job number ${jobNumber} is already in use`);
     }

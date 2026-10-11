@@ -101,9 +101,9 @@ export function Sidebar() {
           )}
           onClick={() => toggleGroup(group.name)}
         >
-          <GroupIcon className="h-4 w-4 flex-shrink-0" />
+          <GroupIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
           <span className="flex-1 truncate">{group.name}</span>
-          <ChevronDown className={cn("h-4 w-4 flex-shrink-0 transition-transform", isExpanded && "rotate-180")} />
+          <ChevronDown className={cn("h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
         </Button>
         {isExpanded && (
           <nav className="pl-6 mt-1 space-y-1 w-full animate-in fade-in slide-in-from-top-2 duration-200">
@@ -118,7 +118,7 @@ export function Sidebar() {
                       active ? "bg-secondary/50 font-medium text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent"
                     )}
                   >
-                    <item.icon className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <item.icon className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                     {item.name}
                   </Button>
                 </Link>
@@ -140,7 +140,7 @@ export function Sidebar() {
               variant={isActive ? "secondary" : "ghost"}
               className={cn("w-full justify-start gap-2", isActive ? "bg-secondary/50 font-medium" : "text-muted-foreground")}
             >
-              <item.icon className="mr-2 h-4 w-4" />
+              <item.icon className="mr-2 h-4 w-4 text-muted-foreground" />
               {item.name}
             </Button>
           </Link>
