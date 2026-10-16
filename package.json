@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@radix-ui/react-alert-dialog": "^1.2.1",
     "@radix-ui/react-dialog": "^1.2.0",
     "@radix-ui/react-dropdown-menu": "^2.1.25",
     "@radix-ui/react-label": "^2.1.16",
@@ -60,7 +61,7 @@
     "autoprefixer": "^10.6.1",
     "jest": "^30.5.2",
     "postcss": "^8.5.29",
-    "prisma": "^5.0.0",
+    "prisma": "^5.22.0",
     "tailwindcss": "^4.3.3",
     "ts-jest": "^29.4.14",
     "ts-node": "^10.0.0",

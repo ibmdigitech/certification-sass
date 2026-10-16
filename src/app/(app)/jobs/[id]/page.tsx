@@ -10,6 +10,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { Loader2, Edit, Plus, ExternalLink, CheckCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScheduleManager } from "@/components/jobs/ScheduleManager";
+import { JobActions } from "@/components/jobs/JobActions";
 
 export interface JobDetail {
   id: number;
@@ -201,6 +203,16 @@ export default function JobDetailPage() {
 
       {error && <AlertBanner variant="error" title="Error" description={error} />}
 
+      {/* Role-authorized job lifecycle actions */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Job Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <JobActions job={{ id: job.id, status: job.status, jobNumber: job.jobNumber }} onActionPerformed={fetchJob} />
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="flex flex-wrap gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -227,7 +239,7 @@ export default function JobDetailPage() {
         </TabsContent>
 
         <TabsContent value="schedule">
-          <ScheduleTab job={job} />
+          <ScheduleTab job={job} onScheduleUpdated={fetchJob} />
         </TabsContent>
 
         <TabsContent value="training">
@@ -511,37 +523,15 @@ function ServicesTab({ job }: { job: JobDetail }) {
   );
 }
 
-function ScheduleTab({ job }: { job: JobDetail }) {
+function ScheduleTab({ job, onScheduleUpdated }: { job: JobDetail; onScheduleUpdated: () => void }) {
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Schedule and assign personnel for each service. Training and inspection are scheduled
-        independently; the two personnel may differ.
-      </p>
-      {job.jobServices.map((s) => (
-        <Card key={s.id}>
-          <CardHeader>
-            <CardTitle className="text-base">
-              {s.serviceType === "TRAINING" ? "Training" : "Inspection"} — Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2 md:grid-cols-2 text-sm">
-            <p>Status: {SERVICE_LABELS[s.status] ?? s.status}</p>
-            <p>
-              Window:{" "}
-              {s.scheduledStart && s.scheduledEnd
-                ? `${new Date(s.scheduledStart).toLocaleString()} → ${new Date(s.scheduledEnd).toLocaleString()}`
-                : "Not scheduled"}
-            </p>
-            {s.assignedResponsibleId ? (
-              <p>Assigned responsible: #{s.assignedResponsibleId}</p>
-            ) : (
-              <p>Assigned responsible: none</p>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <ScheduleManager
+      jobId={job.id}
+      jobNumber={job.jobNumber}
+      jobServices={job.jobServices as any}
+      defaultLocationId={job.locationId}
+      onScheduleUpdated={onScheduleUpdated}
+    />
   );
 }
 

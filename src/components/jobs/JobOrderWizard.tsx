@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,12 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { AlertBanner } from "@/components/ui/alert-banner";
-import { Loader2, Users, ClipboardList } from "lucide-react";
+import { Loader2, Users, ClipboardList, Search, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface NewCustomer {
   id: number;
   companyId: number;
+  name: string | null;
+  code: string | null;
   contact: string | null;
   email: string | null;
   phone: string | null;
@@ -27,7 +30,7 @@ export interface WizardLocation {
   emirate: string | null;
   locationAccreditations: Array<{
     accreditation: { id: number; code: string; name: string };
-    approvalStatus: string;
+    status: string;
     effectiveFrom: string | null;
     effectiveTo: string | null;
   }>;
@@ -102,7 +105,8 @@ const STEPS = ["Customer", "Location", "Services", "Scope & Commercial", "Review
 
 export function JobOrderWizard({ companyId: propCompanyId, onClose }: WizardProps) {
   const router = useRouter();
-  const [companyId] = useState(propCompanyId ?? 1);
+  const { data: session } = useSession();
+  const [companyId] = useState(propCompanyId ?? session?.user?.companyId);
   const [step, setStep] = useState(0);
   const [data, setData] = useState<WizardData>({
     customerId: 0,
@@ -119,18 +123,22 @@ export function JobOrderWizard({ companyId: propCompanyId, onClose }: WizardProp
   const [trainers, setTrainers] = useState<UserRef[]>([]);
   const [inspectors, setInspectors] = useState<UserRef[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerSearchInput, setCustomerSearchInput] = useState("");
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: "", contact: "", email: "", phone: "", code: "" });
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [customerError, setCustomerError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [cRes, lRes, coRes, trRes, uRes] = await Promise.all([
-          fetch(`/api/customers`).then((r) => (r.ok ? r.json() : [])),
+        const [lRes, coRes, trRes, uRes] = await Promise.all([
           fetch(`/api/locations`).then((r) => (r.ok ? r.json() : [])),
           fetch(`/api/training/courses?status=ACTIVE`).then((r) => (r.ok ? r.json() : [])),
           fetch(`/api/trainees`).then((r) => (r.ok ? r.json() : [])),
           fetch(`/api/users`).then((r) => (r.ok ? r.json() : [])),
         ]);
-        setCustomers(Array.isArray(cRes) ? cRes : cRes.customers ?? []);
         setLocations(Array.isArray(lRes) ? lRes : []);
         setCourses(Array.isArray(coRes) ? coRes : coRes.courses ?? coRes);
         const trData = Array.isArray(trRes) ? trRes : trRes.trainees ?? [];
@@ -148,6 +156,85 @@ export function JobOrderWizard({ companyId: propCompanyId, onClose }: WizardProp
     };
     load();
   }, [companyId]);
+
+  // Searchable customer directory (debounced) — stores real DB ids, never names
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      setCustomerSearch(customerSearchInput.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [customerSearchInput]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCustomers = async () => {
+      try {
+        const params = new URLSearchParams({ limit: "50" });
+        if (customerSearch) params.append("search", customerSearch);
+        const res = await fetch(`/api/customers?${params.toString()}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled) {
+          setCustomers(Array.isArray(json) ? json : json.customers ?? []);
+        }
+      } catch {
+        // tolerate
+      }
+    };
+    loadCustomers();
+    return () => {
+      cancelled = true;
+    };
+  }, [customerSearch]);
+
+  const handleCreateCustomerInline = async () => {
+    if (!newCustomer.name && !newCustomer.contact) {
+      setCustomerError("Customer name or contact is required.");
+      return;
+    }
+    setCreatingCustomer(true);
+    setCustomerError(null);
+    try {
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCustomer.name,
+          contact: newCustomer.contact,
+          email: newCustomer.email,
+          phone: newCustomer.phone,
+          code: newCustomer.code,
+          siteName: newCustomer.name ? `${newCustomer.name} Main Facility` : undefined,
+        }),
+      });
+      if (res.status === 409) {
+        const data = await res.json().catch(() => ({}));
+        setCustomerError(data.error || "A customer with these details already exists. Select the existing record instead.");
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to create customer");
+      }
+      const data = await res.json();
+      const created = data.customer;
+      // Refresh the list and select the newly created customer by its real DB id
+      setCustomerSearch("");
+      setCustomerSearchInput("");
+      const listRes = await fetch(`/api/customers?limit=50`);
+      if (listRes.ok) {
+        const listJson = await listRes.json();
+        setCustomers(Array.isArray(listJson) ? listJson : listJson.customers ?? []);
+      }
+      updateData({ customerId: created.id });
+      setShowNewCustomer(false);
+      setNewCustomer({ name: "", contact: "", email: "", phone: "", code: "" });
+    } catch (err) {
+      setCustomerError(err instanceof Error ? err.message : "Failed to create customer");
+    } finally {
+      setCreatingCustomer(false);
+    }
+  };
 
   const updateData = (patch: Partial<WizardData>) => setData((p) => ({ ...p, ...patch }));
 
@@ -257,24 +344,117 @@ export function JobOrderWizard({ companyId: propCompanyId, onClose }: WizardProp
         return (
           <div className="space-y-4">
             <Label>Customer *</Label>
-            <Select
-              value={String(data.customerId || "")}
-              onValueChange={(v) => updateData({ customerId: Number(v) })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select existing customer" />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.contact || c.email} {c.email ? `(${c.email})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="text-xs text-muted-foreground">
-              New-customer creation is managed via the Customers module; select an existing customer here.
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by company name, code, contact, or email..."
+                  value={customerSearchInput}
+                  onChange={(e) => setCustomerSearchInput(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select
+                value={String(data.customerId || "")}
+                onValueChange={(v) => updateData({ customerId: Number(v) })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select existing customer (stores database ID)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name || c.contact || c.email}
+                      {c.code ? ` (${c.code})` : ""} — ID #{c.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {data.customerId > 0 && (
+              <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+                <p>
+                  Selected customer ID <span className="font-mono font-semibold">#{data.customerId}</span>.
+                  The job order will reference this database record — never a free-text name.
+                </p>
+              </div>
+            )}
+
+            {showNewCustomer ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Register New Customer</CardTitle>
+                  <CardDescription>
+                    Create a customer record inline. Duplicate names, codes, emails and TRN numbers are rejected.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {customerError && <AlertBanner variant="error" title="Cannot create customer" description={customerError} />}
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Company / Customer Name *</Label>
+                      <Input
+                        value={newCustomer.name}
+                        onChange={(e) => setNewCustomer((n) => ({ ...n, name: e.target.value }))}
+                        placeholder="e.g. Al Habtoor Grand Resort LLC"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Customer Code</Label>
+                      <Input
+                        value={newCustomer.code}
+                        onChange={(e) => setNewCustomer((n) => ({ ...n, code: e.target.value }))}
+                        placeholder="e.g. CUST-HBT-01"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Contact Person</Label>
+                      <Input
+                        value={newCustomer.contact}
+                        onChange={(e) => setNewCustomer((n) => ({ ...n, contact: e.target.value }))}
+                        placeholder="e.g. Eng. Tariq"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email</Label>
+                      <Input
+                        type="email"
+                        value={newCustomer.email}
+                        onChange={(e) => setNewCustomer((n) => ({ ...n, email: e.target.value }))}
+                        placeholder="operations@client.com"
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>Phone</Label>
+                      <Input
+                        value={newCustomer.phone}
+                        onChange={(e) => setNewCustomer((n) => ({ ...n, phone: e.target.value }))}
+                        placeholder="+971 50 123 4567"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setShowNewCustomer(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="button" size="sm" onClick={handleCreateCustomerInline} disabled={creatingCustomer}>
+                      {creatingCustomer ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                      Create & Select
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowNewCustomer(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Register new customer
+              </Button>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              Search the directory first. Only register a new customer when no matching record exists — this prevents duplicate customer records.
+            </p>
           </div>
         );
       case 1:
@@ -291,7 +471,7 @@ export function JobOrderWizard({ companyId: propCompanyId, onClose }: WizardProp
               <SelectContent>
                 {locations.map((l) => {
                   const accred = l.locationAccreditations[0]?.accreditation.code;
-                  const approved = l.locationAccreditations[0]?.approvalStatus === "VERIFIED";
+                  const approved = l.locationAccreditations[0]?.status === "VERIFIED";
                   return (
                     <SelectItem key={l.id} value={String(l.id)} disabled={!approved}>
                       {l.name} ({l.emirate}) — {accred ?? "No accreditation"}

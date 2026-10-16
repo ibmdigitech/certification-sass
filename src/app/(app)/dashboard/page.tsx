@@ -1,72 +1,93 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, GraduationCap, Calendar, CheckCircle2, AlertTriangle, FileCheck2, Briefcase, BarChart3, AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
-import { format } from "date-fns";
-import { NotificationBar } from "@/components/notifications/NotificationBar";
+import { Button } from "@/components/ui/button";
+import {
+  Briefcase,
+  Truck,
+  Award,
+  Users,
+  AlertTriangle,
+  CheckCircle2,
+  AlertCircle,
+  FileText,
+  Search,
+  FileSignature,
+  Building,
+  TrendingUp,
+  BarChart3,
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  ShieldCheck,
+  RotateCcw,
+} from "lucide-react";
 
-interface DashboardStats {
-  totalTrainees: number;
-  activeCourses: number;
-  pendingCourses: number;
-  upcomingSessions: number;
-  competencyGaps: number;
-  totalCertificates: number;
-  activeJobs: number;
-  completedJobs: number;
-  completedSessions: number;
+interface InspectorStat {
+  id: number;
+  name: string;
+  completed: number;
+  notCompleted: number;
 }
 
-interface ActivityItem {
-  trainee: string;
-  employeeId: string | null;
-  course: string;
-  courseCode: string | null;
-  assessment: string | null;
-  score: string | null;
-  status: string;
-  date: string;
+interface DashboardPayload {
+  stats: {
+    totalTrainees: number;
+    activeCourses: number;
+    pendingCourses: number;
+    upcomingSessions: number;
+    competencyGaps: number;
+    totalCertificates: number;
+    activeJobs: number;
+    completedJobs: number;
+    completedSessions: number;
+  };
+  operationalSummary: {
+    jobPerformingCount: number;
+    deliveryCount: number;
+    certificateCount: number;
+    jobBreakdown: { draft: number; submitted: number; completed: number; cancelled: number };
+    deliveryBreakdown: { draft: number; approved: number; cancelled: number };
+    certificateBreakdown: { draft: number; approved: number; cancelled: number };
+  };
+  inspectionDashboard: {
+    inspectorStats: InspectorStat[];
+    rejectionReportsCount: number;
+    reportsNeedCertificateCount: number;
+    failureReportsNeedsApprovalCount: number;
+    failureApprovedReportsCount: number;
+  };
+  salesDashboard: {
+    customersCreated: number;
+    inquiriesPrepared: number;
+    quotationsPrepared: number;
+    quotationsApproved: number;
+  };
+  recentActivity: any[];
+  expiringCertificates: any[];
 }
-
-interface ExpiringCert {
-  trainee: string;
-  course: string;
-  certificateNumber: string;
-  expiresAt: string;
-  daysRemaining: number;
-}
-
-interface DashboardData {
-  stats: DashboardStats;
-  recentActivity: ActivityItem[];
-  expiringCertificates: ExpiringCert[];
-}
-
-const statusVariants: Record<string, { variant: "default" | "outline" | "destructive"; className: string; label: string; icon: React.ElementType; }> = {
-  passed: { variant: "default", className: "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 border-emerald-500/20", label: "Passed", icon: CheckCircle2 },
-  failed: { variant: "destructive", className: "bg-red-500/15 text-red-500 hover:bg-red-500/25 border-red-500/20", label: "Failed", icon: AlertCircle },
-  in_progress: { variant: "outline", className: "text-amber-500 border-amber-500/20 bg-amber-500/10", label: "In Progress", icon: BarChart3 },
-};
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [data, setData] = useState<DashboardPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openAccordion, setOpenAccordion] = useState<string | null>("rejection");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api/dashboard');
-        if (!res.ok) throw new Error('Failed to fetch dashboard data');
-        const result: DashboardData = await res.json();
-        setData(result);
+        const res = await fetch("/api/dashboard");
+        if (!res.ok) throw new Error("Failed to fetch dashboard metrics");
+        const json: DashboardPayload = await res.json();
+        setData(json);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(err instanceof Error ? err.message : "Error fetching dashboard data");
       } finally {
         setLoading(false);
       }
@@ -76,169 +97,577 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full">
-        <div>
-          <Skeleton className="h-9 w-48 mb-2" />
-          <Skeleton className="h-5 w-96" />
+      <div className="space-y-6 max-w-7xl mx-auto p-4">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-4 rounded" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16 mb-1" />
-                <Skeleton className="h-3 w-24" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
-  if (error || !data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-muted-foreground">{error || 'No data available'}</p>
-      </div>
-    );
-  }
+  const op = data?.operationalSummary ?? {
+    jobPerformingCount: 0,
+    deliveryCount: 0,
+    certificateCount: 0,
+    jobBreakdown: { draft: 0, submitted: 0, completed: 0, cancelled: 0 },
+    deliveryBreakdown: { draft: 0, approved: 0, cancelled: 0 },
+    certificateBreakdown: { draft: 0, approved: 0, cancelled: 0 },
+  };
 
-  const { stats, recentActivity, expiringCertificates } = data;
+  const insp = data?.inspectionDashboard ?? {
+    inspectorStats: [],
+    rejectionReportsCount: 0,
+    reportsNeedCertificateCount: 0,
+    failureReportsNeedsApprovalCount: 0,
+    failureApprovedReportsCount: 0,
+  };
 
-  const statCards = [
-    { name: "Total Trainees", value: stats.totalTrainees, icon: Users, change: "+12% from last month" },
-    { name: "Active Courses", value: stats.activeCourses, icon: GraduationCap, change: `${stats.pendingCourses} pending verification` },
-    { name: "Upcoming Sessions", value: stats.upcomingSessions, icon: Calendar, change: `${stats.completedSessions} completed this month` },
-    { name: "Competency Gaps", value: stats.competencyGaps, icon: AlertTriangle, change: "Requires attention" },
-    { name: "Training Certificates", value: stats.totalCertificates, icon: FileCheck2, change: "Issued & active" },
-    { name: "Active Jobs", value: stats.activeJobs, icon: Briefcase, change: `${stats.completedJobs} completed this month` },
-  ];
+  const sales = data?.salesDashboard ?? {
+    customersCreated: 0,
+    inquiriesPrepared: 0,
+    quotationsPrepared: 0,
+    quotationsApproved: 0,
+  };
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
-        <p className="text-muted-foreground mt-2">
-          Monitor training progress, active sessions, and compliance statuses.
-        </p>
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Top Banner Quick Access (Matches Screenshot Header) */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-muted/40 p-4 rounded-xl border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Executive Operational Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Connected UAE Technical Services & Certification Operations Platform (EIAC & ENAS Scope)
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/sales/inquiries">
+              <Search className="h-4 w-4 mr-1 text-primary" />
+              Inspection Inquiry
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/inspections">
+              <FileText className="h-4 w-4 mr-1 text-primary" />
+              Inspection Report
+            </Link>
+          </Button>
+          <Badge variant="secondary" className="px-3 py-1 font-semibold text-xs">
+            2026 Active Cycle
+          </Badge>
+        </div>
       </div>
 
-      {/* Notification Bar */}
-      <NotificationBar />
-
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.name}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.name}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">{stat.change}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Training Activities</CardTitle>
-            <CardDescription>
-              A snapshot of the most recent training sessions and assessments.
+      {/* Top 3 KPI Summary Cards (Matches Screenshot Page 1) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-t-4 border-t-amber-500 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
+              Operational Work
             </CardDescription>
+            <CardTitle className="text-3xl font-extrabold">{op.jobPerformingCount.toLocaleString()}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Trainee</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentActivity.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                      No recent training activity
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  recentActivity.map((activity, i) => {
-                    const statusConfig = statusVariants[activity.status] ?? statusVariants.in_progress;
-                    const StatusIcon = statusConfig.icon;
-                    return (
-                      <TableRow key={`${activity.trainee}-${i}`}>
-                        <TableCell className="font-medium">{activity.trainee}</TableCell>
-                        <TableCell>{activity.course}</TableCell>
-                        <TableCell>
-                          <Badge variant={statusConfig.variant} className={statusConfig.className}>
-                            <StatusIcon className="w-3 h-3 mr-1" /> {statusConfig.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {format(new Date(activity.date), 'PPp')}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Job Performing Total</span>
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200">
+                Active Field Tasks
+              </Badge>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Expiring Certificates</CardTitle>
-            <CardDescription>
-              Trainees who need recertification soon.
+        <Card className="border-t-4 border-t-blue-500 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
+              Delivery Confirmation
             </CardDescription>
+            <CardTitle className="text-3xl font-extrabold">{op.deliveryCount.toLocaleString()}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {expiringCertificates.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground">
-                No certificates expiring soon
-              </div>
-            ) : (
-              expiringCertificates.map((cert) => (
-                <div key={cert.certificateNumber} className="flex items-center space-x-4">
-                  <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <FileCheck2 className="h-5 w-5 text-indigo-600" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">{cert.trainee}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {cert.course} • expires in {cert.daysRemaining} days
-                    </p>
-                  </div>
-                  <Badge
-                    variant={cert.daysRemaining <= 30 ? "destructive" : "outline"}
-                    className={
-                      cert.daysRemaining <= 30
-                        ? "bg-red-500/15 text-red-500 border-red-500/20"
-                        : "text-amber-500 border-amber-500/20 bg-amber-500/10"
-                    }
-                  >
-                    {cert.daysRemaining <= 30 ? 'Urgent' : `${cert.daysRemaining}d`}
-                  </Badge>
-                </div>
-              ))
-            )}
+          <CardContent>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Delivery Confirmation (DC)</span>
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200">
+                Logistics & Client Handover
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-t-4 border-t-emerald-500 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
+              Official Certificates
+            </CardDescription>
+            <CardTitle className="text-3xl font-extrabold">{op.certificateCount.toLocaleString()}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Total Issued Certificates</span>
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-200">
+                Accredited & QR-Verified
+              </Badge>
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Breakdown Status Section (Matches Horizontal Bars on Screenshot Page 1) */}
+      <Card className="border shadow-sm bg-gradient-to-r from-card to-muted/20">
+        <CardHeader className="py-4 border-b">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-semibold">
+            <div className="text-amber-700 dark:text-amber-400">Job Performing Status</div>
+            <div className="text-blue-700 dark:text-blue-400">DC (Delivery Confirmation) Status</div>
+            <div className="text-emerald-700 dark:text-emerald-400">Certificates Lifecycle</div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4 pb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Job Performing Breakdown */}
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between text-muted-foreground">
+                <span>DRAFT</span>
+                <span>{op.jobBreakdown.draft}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-amber-400 h-2 rounded-full" style={{ width: '25%' }} />
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>SUBMITTED</span>
+                <span>{op.jobBreakdown.submitted}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-amber-500 h-2 rounded-full" style={{ width: '45%' }} />
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>COMPLETED</span>
+                <span>{op.jobBreakdown.completed}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '80%' }} />
+              </div>
+            </div>
+
+            {/* Delivery Confirmation Breakdown */}
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between text-muted-foreground">
+                <span>DRAFT</span>
+                <span>{op.deliveryBreakdown.draft}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-blue-300 h-2 rounded-full" style={{ width: '20%' }} />
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>APPROVED</span>
+                <span>{op.deliveryBreakdown.approved}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '75%' }} />
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>CANCELLED</span>
+                <span>0</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-muted-foreground/30 h-2 rounded-full" style={{ width: '5%' }} />
+              </div>
+            </div>
+
+            {/* Certificates Breakdown */}
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between text-muted-foreground">
+                <span>DRAFT / REVIEW</span>
+                <span>{op.certificateBreakdown.draft}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-emerald-300 h-2 rounded-full" style={{ width: '20%' }} />
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>APPROVED / ISSUED</span>
+                <span>{op.certificateBreakdown.approved}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-emerald-600 h-2 rounded-full" style={{ width: '85%' }} />
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>CANCELLED</span>
+                <span>0</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-muted-foreground/30 h-2 rounded-full" style={{ width: '5%' }} />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Tabs: Inspection Dashboard vs Sales Dashboard vs Training */}
+      <Tabs defaultValue="inspection" className="space-y-6">
+        <TabsList className="grid grid-cols-3 max-w-md">
+          <TabsTrigger value="inspection">Inspection Dashboard</TabsTrigger>
+          <TabsTrigger value="sales">Sales Dashboard</TabsTrigger>
+          <TabsTrigger value="training">Training & Trainees</TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Inspection Dashboard (Matches Page 1 & 5) */}
+        <TabsContent value="inspection" className="space-y-6">
+          {/* DC Summary: Completed vs NOT Completed Inspectors */}
+          <Card>
+            <CardHeader className="bg-muted/30 pb-3">
+              <CardTitle className="text-base font-semibold">DC Summary (Inspector Field Output)</CardTitle>
+              <CardDescription>Individual completion rates and delivery confirmations by assigned engineer</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Completed Column */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 font-semibold text-sm text-emerald-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Completed Inspections
+                  </div>
+                  {insp.inspectorStats.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No inspectors assigned yet.</p>
+                  ) : (
+                    insp.inspectorStats.map((item) => (
+                      <div key={item.id} className="space-y-1">
+                        <div className="flex justify-between text-xs font-medium">
+                          <span>{item.name}</span>
+                          <span className="font-bold text-emerald-600">{item.completed}</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className="bg-emerald-500 h-2 rounded-full"
+                            style={{
+                              width: `${Math.min(100, Math.max(15, item.completed * 10))}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* NOT Completed Column */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 font-semibold text-sm text-amber-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    NOT Completed (Pending Actions)
+                  </div>
+                  {insp.inspectorStats.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No pending items.</p>
+                  ) : (
+                    insp.inspectorStats.map((item) => (
+                      <div key={item.id} className="space-y-1">
+                        <div className="flex justify-between text-xs font-medium">
+                          <span>{item.name}</span>
+                          <span className="font-bold text-amber-600">{item.notCompleted}</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className="bg-amber-500 h-2 rounded-full"
+                            style={{
+                              width: `${Math.min(100, Math.max(10, item.notCompleted * 15))}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Collapsible Operational Queues (Matches Page 1 & 5 Accordions) */}
+          <div className="space-y-3">
+            {/* Rejection Reports */}
+            <div className="border rounded-lg bg-card overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenAccordion(openAccordion === "rejection" ? null : "rejection")}
+                className="w-full flex items-center justify-between p-4 bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+              >
+                <div className="flex items-center gap-2">
+                  {openAccordion === "rejection" ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <span>Rejection Reports (Corrective Action Queue)</span>
+                </div>
+                <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs px-2.5">
+                  {insp.rejectionReportsCount}
+                </Badge>
+              </button>
+              {openAccordion === "rejection" && (
+                <div className="p-4 space-y-3 bg-muted/10">
+                  <p className="text-xs text-muted-foreground">
+                    Equipment inspection records rejected due to safety non-conformances requiring corrective-action or re-inspection.
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/inspections/findings">View Rejection Findings Register</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Reports Need Certificate */}
+            <div className="border rounded-lg bg-card overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenAccordion(openAccordion === "needCert" ? null : "needCert")}
+                className="w-full flex items-center justify-between p-4 bg-cyan-700 text-white font-medium hover:bg-cyan-800 transition"
+              >
+                <div className="flex items-center gap-2">
+                  {openAccordion === "needCert" ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <span>Reports Need Certificate</span>
+                </div>
+                <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs px-2.5">
+                  {insp.reportsNeedCertificateCount}
+                </Badge>
+              </button>
+              {openAccordion === "needCert" && (
+                <div className="p-4 space-y-3 bg-muted/10">
+                  <p className="text-xs text-muted-foreground">
+                    Approved technical reports ready for certificate number allocation and QR stamping.
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/certificates">Generate Pending Certificates</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Failure Reports Needs Approval */}
+            <div className="border rounded-lg bg-card overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenAccordion(openAccordion === "failureNeedsAppr" ? null : "failureNeedsAppr")}
+                className="w-full flex items-center justify-between p-4 bg-emerald-700 text-white font-medium hover:bg-emerald-800 transition"
+              >
+                <div className="flex items-center gap-2">
+                  {openAccordion === "failureNeedsAppr" ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <span>Failure Reports Needs Approval</span>
+                </div>
+                <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs px-2.5">
+                  {insp.failureReportsNeedsApprovalCount}
+                </Badge>
+              </button>
+              {openAccordion === "failureNeedsAppr" && (
+                <div className="p-4 space-y-3 bg-muted/10">
+                  <p className="text-xs text-muted-foreground">
+                    Failed asset reports awaiting final Technical Manager sign-off and client notification.
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/inspections/review">Review Failure Reports</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Failure - Approved Reports */}
+            <div className="border rounded-lg bg-card overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenAccordion(openAccordion === "failureApproved" ? null : "failureApproved")}
+                className="w-full flex items-center justify-between p-4 bg-teal-800 text-white font-medium hover:bg-teal-900 transition"
+              >
+                <div className="flex items-center gap-2">
+                  {openAccordion === "failureApproved" ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <span>Failure - Approved Reports</span>
+                </div>
+                <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs px-2.5">
+                  {insp.failureApprovedReportsCount}
+                </Badge>
+              </button>
+              {openAccordion === "failureApproved" && (
+                <div className="p-4 space-y-3 bg-muted/10">
+                  <p className="text-xs text-muted-foreground">
+                    Historical register of approved rejection certificates and notices issued to clients.
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/inspections">Browse Historical Failure Reports</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab 2: Sales Dashboard (Matches Screenshot Page 3) */}
+        <TabsContent value="sales" className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs uppercase font-semibold">Customers Created</CardDescription>
+                <CardTitle className="text-2xl font-bold">{sales.customersCreated.toLocaleString()}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Active enterprise client accounts</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs uppercase font-semibold">Inquiries Prepared</CardDescription>
+                <CardTitle className="text-2xl font-bold">{sales.inquiriesPrepared.toLocaleString()}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Sales leads & commercial tenders</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs uppercase font-semibold">Quotations Prepared</CardDescription>
+                <CardTitle className="text-2xl font-bold">{sales.quotationsPrepared.toLocaleString()}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Issued service proposals</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-emerald-200 dark:border-emerald-800">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs uppercase font-semibold text-emerald-600">Quotations Approved</CardDescription>
+                <CardTitle className="text-2xl font-bold text-emerald-600">{sales.quotationsApproved.toLocaleString()}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Converted to Job Orders</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Sales Pipeline Funnel */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">Commercial Conversion Funnel</CardTitle>
+                <CardDescription>From customer inquiry to quotation acceptance and job order creation</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span>1. Inquiries Received</span>
+                    <span className="font-bold">{sales.inquiriesPrepared}</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3">
+                    <div className="bg-sky-500 h-3 rounded-full" style={{ width: '100%' }} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span>2. Quotations Formulated</span>
+                    <span className="font-bold">{sales.quotationsPrepared}</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3">
+                    <div className="bg-indigo-500 h-3 rounded-full" style={{ width: '85%' }} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span>3. Client Approved Proposals</span>
+                    <span className="font-bold">{sales.quotationsApproved}</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3">
+                    <div className="bg-emerald-500 h-3 rounded-full" style={{ width: '65%' }} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span>4. Converted Job Orders</span>
+                    <span className="font-bold">{op.jobPerformingCount}</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3">
+                    <div className="bg-amber-500 h-3 rounded-full" style={{ width: '50%' }} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">Sales & Operations Shortcuts</CardTitle>
+                <CardDescription>Rapid access to commercial pipelines and catalogs</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="outline" className="justify-start h-auto py-3" asChild>
+                    <Link href="/sales/inquiries">
+                      <FileText className="h-4 w-4 mr-2 text-primary" />
+                      <div className="text-left">
+                        <div className="font-semibold text-xs">New Inquiry</div>
+                        <div className="text-[10px] text-muted-foreground">Register incoming lead</div>
+                      </div>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="justify-start h-auto py-3" asChild>
+                    <Link href="/sales/quotations">
+                      <FileSignature className="h-4 w-4 mr-2 text-primary" />
+                      <div className="text-left">
+                        <div className="font-semibold text-xs">New Quotation</div>
+                        <div className="text-[10px] text-muted-foreground">Create pricing offer</div>
+                      </div>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="justify-start h-auto py-3" asChild>
+                    <Link href="/customers">
+                      <Building className="h-4 w-4 mr-2 text-primary" />
+                      <div className="text-left">
+                        <div className="font-semibold text-xs">Customers</div>
+                        <div className="text-[10px] text-muted-foreground">Directory & sites</div>
+                      </div>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="justify-start h-auto py-3" asChild>
+                    <Link href="/setup/job-types">
+                      <ShieldCheck className="h-4 w-4 mr-2 text-primary" />
+                      <div className="text-left">
+                        <div className="font-semibold text-xs">Job Types</div>
+                        <div className="text-[10px] text-muted-foreground">EIAC / ENAS Scopes</div>
+                      </div>
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Tab 3: Training & Trainees */}
+        <TabsContent value="training" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs">Total Trainees</CardDescription>
+                <CardTitle className="text-2xl font-bold">{data?.stats.totalTrainees}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs">Active Courses</CardDescription>
+                <CardTitle className="text-2xl font-bold">{data?.stats.activeCourses}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs">Upcoming Sessions</CardDescription>
+                <CardTitle className="text-2xl font-bold">{data?.stats.upcomingSessions}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs">Competency Gaps</CardDescription>
+                <CardTitle className="text-2xl font-bold text-amber-500">{data?.stats.competencyGaps}</CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

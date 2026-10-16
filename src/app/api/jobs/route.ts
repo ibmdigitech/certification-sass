@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const customerId = searchParams.get('customerId') ? Number(searchParams.get('customerId')) : undefined;
     const engineerId = searchParams.get('engineerId') ? Number(searchParams.get('engineerId')) : undefined;
     const serviceType = searchParams.get('serviceType') || undefined;
+    const jobNumber = searchParams.get('jobNumber') || undefined;
+    const search = searchParams.get('search') || undefined;
     const page = Number(searchParams.get('page') || '1');
     const limit = Number(searchParams.get('limit') || '20');
 
@@ -23,6 +25,8 @@ export async function GET(request: NextRequest) {
       customerId,
       engineerId,
       serviceType,
+      jobNumber,
+      search,
       page,
       limit,
     });

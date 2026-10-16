@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, Filter, Loader2 } from "lucide-react";
@@ -12,10 +13,10 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { AlertBanner } from "@/components/ui/alert-banner";
 
-const COMPANY_ID = 1; // TODO: Get from auth context
-
 export default function JobsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const companyId = session?.user?.companyId;
   const [jobs, setJobs] = useState<Job[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [engineers, setEngineers] = useState<User[]>([]);
@@ -172,12 +173,16 @@ export default function JobsPage() {
             className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           >
             <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="on_hold">On Hold</option>
+            <option value="NEW">New</option>
+            <option value="PENDING">Pending</option>
+            <option value="SCHEDULED">Scheduled</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="PENDING_APPROVAL">Pending Approval</option>
+            <option value="APPROVED">Approved</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="DELIVERED">Delivered</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="ON_HOLD">On Hold</option>
           </select>
           <select
             value={filters.customerId || ''}

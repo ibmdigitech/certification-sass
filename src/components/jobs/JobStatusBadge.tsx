@@ -9,12 +9,15 @@ interface JobStatusBadgeProps {
 }
 
 export function JobStatusBadge({ status, className }: JobStatusBadgeProps) {
+  const normalized = (status || "NEW").toUpperCase() as JobStatus;
+  const color = JOB_STATUS_COLORS[normalized] ?? "bg-gray-100 text-gray-800 border-gray-200";
+  const label = JOB_STATUS_LABELS[normalized] ?? status;
   return (
     <Badge
       variant="outline"
-      className={`${JOB_STATUS_COLORS[status]} ${className || ''}`}
+      className={`${color} ${className || ''}`}
     >
-      {JOB_STATUS_LABELS[status]}
+      {label}
     </Badge>
   );
 }

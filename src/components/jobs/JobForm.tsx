@@ -23,7 +23,7 @@ export function JobForm({ job, customers, engineers, onSubmit, onClose, isLoadin
   const [formData, setFormData] = useState<Partial<CreateJobInput & UpdateJobInput>>({
     customerId: job?.customerId || 0,
     type: job?.type || '',
-    status: job?.status || 'pending',
+    status: job?.status || 'PENDING',
     scheduledDate: job?.scheduledDate ? new Date(job.scheduledDate).toISOString().split('T')[0] : '',
     engineerId: job?.engineerId || 0,
   });
@@ -100,12 +100,16 @@ export function JobForm({ job, customers, engineers, onSubmit, onClose, isLoadin
                 )}
                 disabled={!isEditing}
               >
-                <option value="pending">Pending</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="on_hold">On Hold</option>
+                <option value="NEW">New</option>
+                <option value="PENDING">Pending</option>
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="PENDING_APPROVAL">Pending Approval</option>
+                <option value="APPROVED">Approved</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="DELIVERED">Delivered</option>
+                <option value="CANCELLED">Cancelled</option>
+                <option value="ON_HOLD">On Hold</option>
               </select>
             </div>
 

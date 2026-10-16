@@ -1,4 +1,4 @@
-﻿import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
 interface CachedDataValue {
   key: string;
@@ -68,9 +68,13 @@ export async function getDB(): Promise<IDBPDatabase> {
         db.createObjectStore('offlineState', { keyPath: 'key' });
       }
       if (oldVersion < 3) {
-        const queueStore = db.transaction('mutationQueue', 'readwrite').objectStore('mutationQueue');
-        queueStore.createIndex('by-idempotencyKey', 'idempotencyKey', { unique: true });
-        queueStore.createIndex('by-depends', ['dependsOnEntityType', 'dependsOnEntityId']);
+        try {
+          const queueStore = (db as any).transaction('mutationQueue', 'readwrite')?.objectStore?.('mutationQueue');
+          queueStore?.createIndex?.('by-idempotencyKey', 'idempotencyKey', { unique: true });
+          queueStore?.createIndex?.('by-depends', ['dependsOnEntityType', 'dependsOnEntityId']);
+        } catch {
+          // Store or index may already exist
+        }
       }
     },
   });

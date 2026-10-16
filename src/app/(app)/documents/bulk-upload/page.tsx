@@ -1,4 +1,3 @@
-import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/ui/page-header";
 import { BulkDocumentUploader } from "@/components/documents/BulkDocumentUploader";
 import { Metadata } from "next";
@@ -10,17 +9,15 @@ export const metadata: Metadata = {
 
 export default function BulkUploadPage() {
   return (
-    <AppShell>
-      <div className="space-y-6">
-        <PageHeader 
-          title="Bulk Document Upload" 
-          description="Upload Emirates IDs, Passports, Visas, and other documents. The AI will automatically extract data and match them to jobs or trainees."
-        />
-        
-        <div className="bg-card border rounded-xl p-6">
-          <BulkDocumentUploader />
-        </div>
+    <div className="space-y-6">
+      <PageHeader 
+        title="Bulk Document Upload" 
+        description="Upload Emirates IDs, Passports, Visas, and other documents. The AI will automatically extract data and match them to jobs or trainees."
+      />
+      
+      <div className="bg-card border rounded-xl p-6">
+        <BulkDocumentUploader />
       </div>
-    </AppShell>
+    </div>
   );
 }

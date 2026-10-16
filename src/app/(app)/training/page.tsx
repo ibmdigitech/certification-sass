@@ -41,6 +41,7 @@ interface Course {
   credits: number | null;
   certificateValidityMonths: number | null;
   tags: string[];
+  location: { id: number; code: string; name: string } | null;
   _count: {
     enrollments: number;
     modules: number;
@@ -54,6 +55,8 @@ export default function TrainingCourseMasterPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [locations, setLocations] = useState<Array<{id: number; code: string; name: string}>>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [formData, setFormData] = useState({
@@ -68,9 +71,22 @@ export default function TrainingCourseMasterPage() {
     category: "",
     courseType: "OPERATOR",
     tags: "",
+    locationId: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  const fetchLocations = async () => {
+    try {
+      const res = await fetch("/api/locations");
+      if (res.ok) {
+        const data = await res.json();
+        setLocations(data.locations || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch locations:", error);
+    }
+  };
 
   const fetchCourses = async () => {
     setLoading(true);
@@ -79,6 +95,7 @@ export default function TrainingCourseMasterPage() {
       if (searchQuery) params.append("search", searchQuery);
       if (statusFilter) params.append("status", statusFilter);
       if (categoryFilter) params.append("category", categoryFilter);
+      if (locationFilter) params.append("locationId", locationFilter);
       const res = await fetch(`/api/training/courses?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -95,8 +112,12 @@ export default function TrainingCourseMasterPage() {
   };
 
   useEffect(() => {
+    fetchLocations();
+  }, []);
+
+  useEffect(() => {
     fetchCourses();
-  }, [searchQuery, statusFilter, categoryFilter]);
+  }, [searchQuery, statusFilter, categoryFilter, locationFilter]);
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -150,6 +171,7 @@ export default function TrainingCourseMasterPage() {
           category: formData.category.trim() || undefined,
           courseType: formData.courseType,
           tags: formData.tags.split(",").map(t => t.trim()).filter(Boolean),
+          locationId: formData.locationId ? parseInt(formData.locationId) : undefined,
         }),
       });
       if (res.ok) {
@@ -188,6 +210,7 @@ export default function TrainingCourseMasterPage() {
           category: formData.category.trim() || undefined,
           courseType: formData.courseType,
           tags: formData.tags.split(",").map(t => t.trim()).filter(Boolean),
+          locationId: formData.locationId ? parseInt(formData.locationId) : undefined,
         }),
       });
       if (res.ok) {
@@ -256,6 +279,7 @@ export default function TrainingCourseMasterPage() {
       category: course.category || "",
       courseType: course.courseType || "OPERATOR",
       tags: course.tags.join(", "),
+      locationId: course.location?.id?.toString() || "",
     });
     setFormErrors({});
     setIsDialogOpen(true);
@@ -274,6 +298,7 @@ export default function TrainingCourseMasterPage() {
       category: "",
       courseType: "OPERATOR",
       tags: "",
+      locationId: "",
     });
   };
 
@@ -381,6 +406,23 @@ export default function TrainingCourseMasterPage() {
                   <SelectContent>
                     {["OPERATOR", "SAFETY", "INSPECTION", "TECHNICAL", "COMPLIANCE"].map(type => (
                       <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="locationId">Location</Label>
+                <Select
+                  value={formData.locationId}
+                  onValueChange={(value) => setFormData({ ...formData, locationId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No specific location</SelectItem>
+                    {locations.map(loc => (
+                      <SelectItem key={loc.id} value={String(loc.id)}>{loc.name} ({loc.code})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -516,6 +558,17 @@ export default function TrainingCourseMasterPage() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={locationFilter} onValueChange={setLocationFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Locations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Locations</SelectItem>
+              {locations.map(loc => (
+                <SelectItem key={loc.id} value={String(loc.id)}>{loc.name} ({loc.code})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -547,6 +600,7 @@ export default function TrainingCourseMasterPage() {
                     <TableHead>Code</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Location</TableHead>
                     <TableHead>Validity</TableHead>
                     <TableHead>Duration</TableHead>
                     <TableHead>Training Hrs</TableHead>
@@ -565,6 +619,7 @@ export default function TrainingCourseMasterPage() {
                       <TableCell>
                         <Badge variant="outline" className="text-xs">{course.courseType || "-"}</Badge>
                       </TableCell>
+                      <TableCell>{course.location ? `${course.location.name} (${course.location.code})` : <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell>
                         {course.certificateValidityMonths ? `${course.certificateValidityMonths} months` : <span className="text-muted-foreground">No expiry</span>}
                       </TableCell>

@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { CertificateService } from '../certificate.service';
 import { QRCodeService } from './qr-code.service';
 import { PDFGenerationService } from './pdf-generation.service';
@@ -78,7 +78,7 @@ export class CertificateManager {
       ) as Buffer;
 
       const pdfBase64 = pdfBuffer.toString('base64');
-      pdfUrl = data:application/pdf;base64,;
+      pdfUrl = `data:application/pdf;base64,${pdfBase64}`;
 
       await prisma.certificate.update({
         where: { id: certificate.id },
@@ -91,7 +91,7 @@ export class CertificateManager {
       });
     }
 
-    const verificationUrl = ${baseUrl}/verify/;
+    const verificationUrl = `${baseUrl}/verify/${certificate.number}`;
 
     return {
       certificate,
@@ -110,7 +110,7 @@ export class CertificateManager {
 
     return {
       certificate,
-      verificationUrl: ${base}/verify/,
+      verificationUrl: `${base}/verify/${certificate.number}`,
       qrCodeUrl: certificate.qrUrl,
       pdfUrl: certificate.pdfUrl,
       verifications: certificate.verifications,
@@ -258,9 +258,9 @@ export class CertificateManager {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (format === 'csv') {
+if (format === 'csv') {
       const headers = [
-        'Certificate Number', 'Job Number', 'Customer Contact', 'Status', 
+        'Certificate Number', 'Job Number', 'Customer Contact', 'Status',
         'Compliance Authority', 'Created At', 'Updated At',
         'QR Code URL', 'PDF URL', 'Verification Count'
       ];
@@ -276,7 +276,7 @@ export class CertificateManager {
         c.pdfUrl ?? '',
         c.verifications?.length ?? 0,
       ]);
-      return [headers, ...rows].map(r => r.map(v => "").join(',')).join('\n');
+      return [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     }
 
     return certificates;

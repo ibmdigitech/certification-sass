@@ -44,6 +44,7 @@ export async function PUT(
       ...body,
       id: parseInt(id),
       hireDate: body.hireDate ? new Date(body.hireDate) : undefined,
+      dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
     });
 
     return NextResponse.json(trainee);

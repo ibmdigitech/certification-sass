@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -57,7 +57,7 @@ function getModel(entity: string): ModelDelegate | null {
 async function applyMutation(mutation: SyncRequest['mutations'][0], companyId: number) {
   const model = getModel(mutation.entity);
   if (!model) {
-    throw new Error(Unknown entity: );
+    throw new Error(`Unknown entity: ${mutation.entity}`);
   }
 
   switch (mutation.type) {
@@ -122,11 +122,11 @@ export async function POST(request: NextRequest) {
 
     const body: SyncRequest = await request.json();
     const { mutations, clientVersion, trace } = body;
-    const traceId = trace || sync-;
+    const traceId = trace || `sync-${Date.now()}`;
 
     const url = new URL(request.url);
     const traceParam = url.searchParams.get('trace');
-    const traceLabel = traceId + (traceParam ? - : '');
+    const traceLabel = traceId + (traceParam ? `-${traceParam}` : '');
 
     const results: Array<{ id: string; success: boolean; data?: unknown; merged?: boolean; conflict?: boolean; skipped?: boolean }> = [];
     const conflicts: ConflictResponse[] = [];
@@ -175,14 +175,14 @@ export async function POST(request: NextRequest) {
         await prisma.syncQueue.create({
           data: {
             companyId,
-            userId,
+            userId: Number(userId),
             entityType: mutation.entity,
             entityId: mutation.entityId ? Number(mutation.entityId) : null,
             operation: mutation.type.toUpperCase() as 'CREATE' | 'UPDATE' | 'DELETE',
-            payload: mutation.data,
+            payload: (mutation.data ?? {}) as any,
             idempotencyKey: mutation.idempotencyKey,
             dependsOnEntityType: mutation.dependsOnEntityType,
-            dependsOnEntityId: mutation.dependsOnEntityId,
+            dependsOnEntityId: mutation.dependsOnEntityId ? Number(mutation.dependsOnEntityId) : null,
             status: 'SYNCED',
           },
         });

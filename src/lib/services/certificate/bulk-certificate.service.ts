@@ -58,7 +58,7 @@ export class BulkCertificateService {
   static async bulkCreateCertificates(request: BulkCertificateRequest): Promise<BulkCertificateResult> {
     const { companyId, jobId, traineeIds, complianceAuthority, status, generatePDF = true, generateQRCode = true, generateSignature = true, templateId = 'default', baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000' } = request;
 
-    const results = [];
+    const results: any[] = [];
     let successful = 0;
     let failed = 0;
 
@@ -133,7 +133,7 @@ export class BulkCertificateService {
     results: Array<{ certificateId: number; pdfUrl: string; error?: string }>;
     summary: { total: number; successful: number; failed: number };
   }> {
-    const results = [];
+    const results: Array<{ certificateId: number; pdfUrl: string; error?: string }> = [];
     let successful = 0;
     let failed = 0;
 
@@ -169,7 +169,7 @@ export class BulkCertificateService {
     results: Array<{ certificateId: number; qrUrl: string; error?: string }>;
     summary: { total: number; successful: number; failed: number };
   }> {
-    const results = [];
+    const results: Array<{ certificateId: number; qrUrl: string; error?: string }> = [];
     let successful = 0;
     let failed = 0;
 
@@ -191,7 +191,7 @@ export class BulkCertificateService {
     results: Array<{ certificateId: number; signature: string; error?: string }>;
     summary: { total: number; successful: number; failed: number };
   }> {
-    const results = [];
+    const results: Array<{ certificateId: number; signature: string; error?: string }> = [];
     let successful = 0;
     let failed = 0;
 

@@ -1,4 +1,4 @@
-﻿import { queueMutation, getQueuedMutations, markMutationSynced, deleteMutation, incrementRetryCount, updateMutation } from './indexeddb';
+import { queueMutation, getQueuedMutations, markMutationSynced, deleteMutation, incrementRetryCount, updateMutation } from './indexeddb';
 
 export interface MutationOptions {
   entity: string;
@@ -166,7 +166,7 @@ let url = `${baseUrl}/`;
     }
 
     if (!response.ok) {
-      throw new Error(Sync failed:  );
+      throw new Error(`Sync failed: ${response.status} ${response.statusText}`);
     }
 
     const serverResponse = await response.json();
@@ -195,7 +195,7 @@ let url = `${baseUrl}/`;
   private async forceClientUpdate(mutation: Awaited<ReturnType<typeof getQueuedMutations>>[0], conflict: SyncResult['conflicts'][0]): Promise<void> {
     const { entity, entityId, data } = mutation;
     const baseUrl = '/api';
-    const url = ${baseUrl}//?force=true;
+    const url = `${baseUrl}/${entity}/${entityId}?force=true`;
 
     const response = await fetch(url, {
       method: 'PUT',

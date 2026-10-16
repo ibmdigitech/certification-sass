@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Bell, User, AlertTriangle, CheckCircle2, XCircle, FileText, Award, ClipboardCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -529,7 +530,12 @@ export function Header() {
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Company Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-500">Log out</DropdownMenuItem>
+            <DropdownMenuItem 
+              className="text-red-500 cursor-pointer"
+              onClick={() => signOut({ callbackUrl: "/login" })}
+            >
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

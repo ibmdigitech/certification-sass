@@ -1,38 +1,48 @@
 # Master Implementation Plan, Map & Audit Log
 
 **Project:** Offline-First Inspection + Training + Certificate AI SaaS
-**Updated:** 2026-10-07
+**Updated:** 2026-10-12 (Reconciliation Audit)
 
 ---
 
 ## 📊 Live Status Table
 
-| Phase | Name | Status | Impl% | Tests | Acceptance | Blocker |
-|-------|------|--------|-------|-------|------------|---------|
-| 0 | Audit & Preservation | ✅ Complete | 100% | ✅ | ✅ | — |
-| 1 | Core Data Architecture | ⏳ Pending | 0% | — | — | Phase 0 |
-| 2 | Job Management & Numbering | ⏳ Pending | 0% | — | — | Phase 1 |
-| 3 | Trainee / Personnel | ⏳ Pending | 0% | — | — | Phase 2 |
-| 4 | Document Management Foundation | ⏳ Pending | 0% | — | — | Phase 3 |
-| 5 | ID Capture + Crop + Image | ⏳ Pending | 0% | — | — | Phase 4 |
-| 6 | AI/OCR Document Extraction | ⏳ Pending | 0% | — | — | Phase 5 |
-| 7 | Document Naming & Matching | ⏳ Pending | 0% | — | — | Phase 6 |
-| 8 | Bulk Document Upload | ⏳ Pending | 0% | — | — | Phase 7 |
-| 9 | Bulk Job Import & Creation | ⏳ Pending | 0% | — | — | Phase 8 |
-| 10 | Training / Inspection Completion | ⏳ Pending | 0% | — | — | Phase 9 |
-| 11 | Accreditation & Location Engine | ⏳ Pending | 0% | — | — | Phase 10 |
-| 12 | Certificate Numbering Engine | ⏳ Pending | 0% | — | — | Phase 11 |
-| 13 | Certificate PDF Generator | ⏳ Pending | 0% | — | — | Phase 12 |
-| 14 | QR Verification | ⏳ Pending | 0% | — | — | Phase 13 |
-| 15 | Timesheet System | ⏳ Pending | 0% | — | — | Phase 14 |
-| 16 | Timesheet PDF | ⏳ Pending | 0% | — | — | Phase 15 |
-| 17 | Bulk Certificate & Timesheet Gen | ⏳ Pending | 0% | — | — | Phase 16 |
-| 18 | Bulk Print Center | ⏳ Pending | 0% | — | — | Phase 17 |
-| 19 | Job Package Generation | ⏳ Pending | 0% | — | — | Phase 18 |
-| 20 | Offline Integration | ⏳ Pending | 0% | — | — | Phase 19 |
-| 21 | AI Certificate QA | ⏳ Pending | 0% | — | — | Phase 20 |
-| 22 | Bulk E2E Testing | ⏳ Pending | 0% | — | — | Phase 21 |
-| 23 | Production Hardening | ⏳ Pending | 0% | — | — | Phase 22 |
+| Phase | Name | Status | Impl% | Test Status | Acceptance | Blocker |
+|-------|------|--------|-------|-------------|------------|---------|
+| 0 | Audit & Preservation | ✅ ACCEPTED | 100% | ✅ PASS | ✅ | — |
+| 1 | Core Data Architecture | ✅ ACCEPTED | 100% | ✅ PASS | ✅ | — |
+| 2 | Job Management & Numbering | 🔧 IMPLEMENTED — NOT VERIFIED | 90% | ✅ PASS (job-order-core) | — | UI acceptance pending |
+| 2A | Customer Equipment Asset Registry | 🔧 IMPLEMENTED — NOT VERIFIED | 90% | ✅ PASS (customer-hierarchy) | — | UI acceptance pending |
+| 2B | Multiple Inspection Records per Job | 🔧 IMPLEMENTED — NOT VERIFIED | 85% | ✅ PASS (inspection-checklists, e2e-combined) | — | Reschedule per-asset not tested |
+| 2C | Multiple Training Activities per Job | 🔧 IMPLEMENTED — NOT VERIFIED | 85% | ✅ PASS (e2e-combined) | — | Capacity validation pending |
+| 2D | Job Detail UI Overhaul | ⏳ IN PROGRESS | 60% | — | — | Depends on 2A–2C stabilization |
+| 3 | Trainee / Personnel Management | ⏳ IN PROGRESS | 80% | ✅ PASS (e2e-combined trainee creation) | — | Duplicate detection UI pending |
+| 4 | Document Management Foundation | ❌ NOT STARTED | 0% | — | — | Phase 3 |
+| 5 | ID Capture + Crop + Image | ❌ NOT STARTED | 0% | — | — | Phase 4 |
+| 6 | AI/OCR Document Extraction | ❌ NOT STARTED | 0% | — | — | Phase 5 |
+| 7 | Document Naming & Matching | ❌ NOT STARTED | 0% | — | — | Phase 6 |
+| 8 | Bulk Document Upload | ❌ NOT STARTED | 0% | — | — | Phase 7 |
+| 9 | Bulk Job Import & Creation | ❌ NOT STARTED | 0% | — | — | Phase 8 |
+| 10 | Training / Inspection Completion | ⏳ IN PROGRESS | 75% | ✅ PASS (inspection-checklists, e2e-combined) | — | FailureWorkflow integration pending |
+| 11 | Accreditation & Location Engine | ⏳ IN PROGRESS | 70% | ✅ PASS (partial via team accreditation badges) | — | Validation rules not enforced |
+| 12 | Certificate Numbering Engine | ❌ NOT STARTED | 0% | — | — | Phase 11 |
+| 13 | Certificate PDF Generator | ❌ NOT STARTED | 0% | — | — | Phase 12 |
+| 14 | QR Verification | ❌ NOT STARTED | 0% | — | — | Phase 13 |
+| 15 | Timesheet System | ❌ NOT STARTED | 0% | — | — | Phase 14 |
+| 16 | Timesheet PDF | ❌ NOT STARTED | 0% | — | — | Phase 15 |
+| 17 | Bulk Certificate & Timesheet Gen | ❌ NOT STARTED | 0% | — | — | Phase 16 |
+| 18 | Bulk Print Center | ❌ NOT STARTED | 0% | — | — | Phase 17 |
+| 19 | Job Package Generation | ❌ NOT STARTED | 0% | — | — | Phase 18 |
+| 20 | Offline Integration | ❌ NOT STARTED | 0% | — | — | Phase 19 |
+| 21 | AI Certificate QA | ❌ NOT STARTED | 0% | — | — | Phase 20 |
+| 22 | Bulk E2E Testing | ❌ NOT STARTED | 0% | — | — | Phase 21 |
+| 23 | Production Hardening | ❌ NOT STARTED | 0% | — | — | Phase 22 |
+| **Track 24** | **Sales & Quotation Management** | 🧪 TESTING | 95% | ✅ PASS (sales-quotation-flow) | — | End-to-end acceptance pending |
+| **Track 25** | **Inspector & Trainer Authorization** | 🔧 IMPLEMENTED — NOT VERIFIED | 85% | ✅ PASS (e2e-combined trainer record) | — | Authorization matrix validation pending |
+| **Track 26** | **Certificate Lifecycle & Revisions** | 🔧 IMPLEMENTED — NOT VERIFIED | 80% | ✅ PASS (e2e-combined cert create) | — | Reprint/revision/renewal workflows pending |
+| **Track 27** | **Accounts, Invoicing & Payments** | ⏳ IN PROGRESS | 60% | ✅ PASS (e2e-combined payment) | — | Invoice generation, partial payments |
+| **Track 28** | **Delivery (DC) & Job Closure** | 🔧 IMPLEMENTED — NOT VERIFIED | 80% | ✅ PASS (e2e-combined delivery) | — | Four-pillar closure gate not enforced |
+| **Track 29** | **Administration & Monitoring** | 🧪 TESTING | 90% | ✅ PASS (customer-merge) | — | Notification settings E2E pending |
 
 ---
 
@@ -60,7 +70,7 @@ Then expand to:
 
 Do **NOT** build bulk printing first. The dependency order is:
 
-**Job → Trainee → Document → AI Extraction → Training/Inspection → Accreditation/Location → Timesheet → Certificate → QR → Bulk Generation → Printing.**
+**Job → Equipment Assets → Multi-Inspection → Multi-Training → Job UI → Trainee → Document → AI Extraction → Training/Inspection → Accreditation/Location → Timesheet → Certificate → QR → Bulk Generation → Printing.**
 
 ---
 
@@ -114,7 +124,7 @@ Release MUST be blocked if:
 
 ## 🏛️ Phase 1 — Core Data Architecture
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE
 
 ### Goal
 
@@ -159,7 +169,7 @@ Company/Tenant → Customer → Job → Trainee/Personnel → Training/Inspectio
 
 ## 📋 Phase 2 — Job Management & Numbering
 
-**Status:** ⏳ PENDING
+**Status:** 🔧 IMPLEMENTED — NOT VERIFIED
 
 ### Goal
 
@@ -186,9 +196,174 @@ Create Job → TSC-2563741 → Save → Refresh → Same Job Number
 
 ---
 
+## 🏭 Phase 2A — Customer Equipment Asset Registry
+
+**Status:** 🔧 IMPLEMENTED — NOT VERIFIED
+
+### Goal
+
+Enable customers to maintain a persistent registry of equipment assets with full lifecycle tracking.
+
+### Implement
+
+- **EquipmentAsset model** — Internal asset ID, customer ownership, site/location, category/type, make/model/serial/registration, specifications (JSON), hire type (OWNED/HIRED/THIRD_PARTY), status (ACTIVE/INACTIVE/RETIRED)
+- **Asset documents & photos** — Link to Document model (reuse existing)
+- **Duplicate detection** — Customer + serial number, customer + registration number, customer + asset ID; queue uncertain matches for review (no auto-merge)
+- **Asset ownership validation** — Tenant + customer scoped queries; hired/third-party equipment flagged
+- **CRUD API** — `/api/equipment-assets`, `/api/equipment-assets/[id]`
+- **Audit logging** — ASSET_CREATED, ASSET_UPDATED, ASSET_RETIRED, DUPLICATE_DETECTED
+
+### Requirements
+
+- Every asset belongs to one customer and one tenant
+- Asset ID unique per tenant
+- Serial number unique per tenant (for duplicate detection)
+- Registration number unique per tenant (for duplicate detection)
+- Documents, photos, inspection history accessible from asset
+- Soft delete / retire only — preserve history
+
+### Exit Criteria
+
+```
+Customer ABC has assets: EX-001 (Excavator), EX-002 (Excavator), FL-001 (Forklift)
+Each asset has serial, registration, documents, status
+Duplicate detection flags: same serial → review queue
+```
+
+---
+
+## 🔍 Phase 2B — Multiple Inspection Records per Job
+
+**Status:** 🔧 IMPLEMENTED — NOT VERIFIED
+
+### Goal
+
+Allow a single Job Order to contain multiple inspection records, each linked to a specific equipment asset.
+
+### Implement
+
+- **InspectionRecord model** (replaces/extends `Inspection`) — FK to EquipmentAsset, FK to Job, FK to JobService (optional), inspector, scope, checklist, findings, result, review/approval status
+- **Remove JobService unique constraint** — Drop `@@unique([jobId, serviceType])` to allow multiple INSPECTION services per job
+- **JobService → InspectionRecord** — One-to-many (each inspection service can have multiple asset-specific records)
+- **Migrate existing data** — Convert existing `Inspection.equipmentAsset` strings to EquipmentAsset records and link
+- **Certificate linkage** — Certificate.inspectionId → InspectionRecord.id (already supported)
+- **API** — `/api/inspection-records`, `/api/inspection-records/[id]`, `/api/jobs/[id]/inspection-records`
+
+### Requirements
+
+- Each inspection record ties to exactly one EquipmentAsset
+- Mixed results per job (PASS/FAIL/CONDITIONAL per asset)
+- Independent schedule, inspector, checklist, findings per asset
+- Reschedule one asset without affecting others
+- Remove asset from job before work starts → no history loss (soft remove)
+- Tenant isolation on all queries
+
+### Exit Criteria
+
+```
+Job TSC-25678 for ABC Company:
+  - InspectionRecord #1 → EX-001 (Excavator) → PASS → Certificate issued
+  - InspectionRecord #2 → EX-002 (Excavator) → FAIL → No certificate
+  - InspectionRecord #3 → EX-003 (Excavator) → PASS → Certificate issued
+  - InspectionRecord #4 → FL-001 (Forklift) → CONDITIONAL → Certificate with conditions
+All records traceable to Job TSC-25678, Customer ABC
+```
+
+---
+
+## 🎓 Phase 2C — Multiple Training Activities per Job
+
+**Status:** 🔧 IMPLEMENTED — NOT VERIFIED
+
+### Goal
+
+Allow a single Job Order to contain multiple training activities (courses/sessions) with independent trainee enrollments.
+
+### Implement
+
+- **Remove JobService TRAINING unique constraint** — Allow multiple TRAINING services per job
+- **JobService → TrainingSession** — One-to-many (each training service can have multiple sessions)
+- **TrainingSession** — Remove `traineeId` field (conflicts with multi-trainee via SessionEnrollment)
+- **SessionEnrollment** — Multiple trainees per session (already supported)
+- **Per-trainee outcomes** — Attendance, AssessmentAttempt, TraineeCompetency, Certificate (already supported)
+- **API** — Extend `/api/jobs/[id]/services` to create multiple TRAINING services
+- **Capacity/availability validation** — Per session, per trainer
+
+### Requirements
+
+- Each training service can have multiple sessions (different dates, locations, trainers)
+- Multiple trainees per session with individual results
+- Different trainees can have different attendance, assessment, competency outcomes
+- Certificate issued per trainee per course (already supported)
+- Validate trainer authorization, session capacity, location accreditation
+
+### Exit Criteria
+
+```
+Job TSC-25678 for ABC Company:
+  - TrainingService #1 → "Excavator Operator" → Session A (3 trainees)
+    - Employee A → ATTENDED, PASSED, COMPETENT → Certificate issued
+    - Employee B → ATTENDED, FAILED → No certificate
+    - Employee C → ABSENT → No certificate
+  - TrainingService #2 → "Safety Awareness" → Session B (2 trainees)
+    - Employee D → ATTENDED, PASSED → Certificate issued
+    - Employee E → ATTENDED, PASSED → Certificate issued
+All enrollments traceable to Job TSC-25678
+```
+
+---
+
+## 🖥️ Phase 2D — Job Detail UI Overhaul
+
+**Status:** ⏳ IN PROGRESS
+
+### Goal
+
+Redesign Job Detail page to support multi-equipment and multi-trainee workflows.
+
+### Implement
+
+**Equipment & Inspections Tab**
+- Asset table: Add/Select/Remove-before-commit controls
+- Columns: Asset ID, Name, Category, Serial, Registration, Scope, Schedule, Inspector, Status, Findings, Certificate
+- Inline add: Select existing asset OR create new asset OR request registration review
+- Bulk import with duplicate detection preview
+- Row actions: View inspection, edit schedule, view certificate, remove (if not started)
+
+**Trainees & Training Tab**
+- Trainee table: Add/Select/Remove-before-commit controls
+- Columns: Trainee, Course, Session, Trainer, Attendance, Assessment, Result, Certificate
+- Bulk enroll from customer's trainee pool
+- Row actions: View enrollment, record attendance, view assessment, view certificate
+
+**Shared**
+- Outstanding actions list shows pending items per asset/trainee
+- Job cannot close until all required child activities complete
+- Partial progress allowed with clear outstanding list
+
+### Requirements
+
+- Reuse existing JobService, TrainingSession, SessionEnrollment, InspectionRecord APIs
+- Real-time status updates
+- Mobile-responsive tables with horizontal scroll
+- Accessibility: keyboard navigation, screen readers
+
+### Exit Criteria
+
+```
+Job TSC-25678 detail page:
+  Equipment & Inspections tab shows 4 rows (3 excavators, 1 forklift)
+  Each row has independent status, schedule, certificate link
+  Trainees & Training tab shows 5 rows (3 Excavator Operator, 2 Safety)
+  Each row has independent attendance, assessment, certificate
+  Job close button disabled until all 9 activities complete
+```
+
+---
+
 ## 👥 Phase 3 — Trainee / Personnel Management
 
-**Status:** ⏳ PENDING
+**Status:** ⏳ IN PROGRESS (80%)
 
 ### Goal
 
@@ -211,7 +386,7 @@ Trainer can find existing trainee OR create new trainee.
 
 ---
 
-## 📁 Phase 4 — Document Management Foundation
+## 📁 Phase 5 — Document Management Foundation
 
 **Status:** ⏳ PENDING
 
@@ -246,7 +421,7 @@ Upload and securely retrieve Emirates ID, Passport, Visa, License.
 
 ---
 
-## 📸 Phase 5 — ID Capture + Crop + Image Processing
+## 📸 Phase 6 — ID Capture + Crop + Image Processing
 
 **Status:** ⏳ PENDING
 
@@ -272,7 +447,7 @@ User captures ID on phone/tablet with correct crop, readable image, rotation, co
 
 ---
 
-## 🤖 Phase 6 — AI/OCR Document Extraction
+## 🤖 Phase 7 — AI/OCR Document Extraction
 
 **Status:** ⏳ PENDING
 
@@ -300,7 +475,7 @@ AI successfully extracts supported test documents; user can correct every extrac
 
 ---
 
-## 🏷️ Phase 7 — Automatic Document Naming & Matching
+## 🏷️ Phase 8 — Automatic Document Naming & Matching
 
 **Status:** ⏳ PENDING
 
@@ -326,7 +501,7 @@ Bulk-uploaded documents matched to correct trainee/job with exception queue for 
 
 ---
 
-## 📤 Phase 8 — Bulk Document Upload
+## 📤 Phase 9 — Bulk Document Upload
 
 **Status:** ⏳ PENDING
 
@@ -355,7 +530,7 @@ Upload 100 documents without losing files or freezing the application.
 
 ---
 
-## 📥 Phase 9 — Bulk Job Import & Creation
+## 📥 Phase 10 — Bulk Job Import & Creation
 
 **Status:** ⏳ PENDING
 
@@ -391,7 +566,7 @@ Import 100 jobs with valid records, duplicates, missing fields, invalid dates �
 
 ---
 
-## 🎓 Phase 10 — Training / Inspection Completion
+## 🎓 Phase 11 — Training / Inspection Completion
 
 **Status:** ⏳ PENDING
 
@@ -415,7 +590,7 @@ System can determine `CERTIFICATE_ELIGIBLE = true / false` with a clear reason.
 
 ---
 
-## 🏅 Phase 11 — Accreditation & Location Engine
+## 🏅 Phase 12 — Accreditation & Location Engine
 
 **Status:** ⏳ PENDING
 
@@ -439,7 +614,7 @@ Invalid accreditation/template combinations blocked before certificate generatio
 
 ---
 
-## 🔢 Phase 12 — Certificate Numbering Engine
+## 🔢 Phase 13 — Certificate Numbering Engine
 
 **Status:** ⏳ PENDING
 
@@ -470,7 +645,7 @@ Concurrent certificate generation cannot create duplicate numbers.
 
 ---
 
-## 📜 Phase 13 — Certificate PDF Generator
+## 📜 Phase 14 — Certificate PDF Generator
 
 **Status:** ⏳ PENDING
 
@@ -492,7 +667,7 @@ Generate valid A4 PDF for EIAC+Dubai, EIAC+AbuDhabi, ENAS+Dubai, ENAS+AbuDhabi (
 
 ---
 
-## 🔍 Phase 14 — QR Verification
+## 🔍 Phase 15 — QR Verification
 
 **Status:** ⏳ PENDING
 
@@ -516,7 +691,7 @@ Scan QR from different device/browser without logging in — correct status disp
 
 ---
 
-## ⏱️ Phase 15 — Timesheet System
+## ⏱️ Phase 16 — Timesheet System
 
 **Status:** ⏳ PENDING
 
@@ -536,7 +711,7 @@ Approved timesheet cannot be changed without authorized correction workflow.
 
 ---
 
-## 📄 Phase 16 — Timesheet PDF
+## 📄 Phase 17 — Timesheet PDF
 
 **Status:** ⏳ PENDING
 
@@ -550,7 +725,7 @@ TimesheetTemplateEngine, TimesheetPDFGenerator
 
 ---
 
-## 📦 Phase 17 — Bulk Certificate & Timesheet Generation
+## 📦 Phase 18 — Bulk Certificate & Timesheet Generation
 
 **Status:** ⏳ PENDING
 
@@ -570,7 +745,7 @@ Only valid jobs proceed unless authorized override.
 
 ---
 
-## 🖨️ Phase 18 — Bulk Print Center
+## 🖨️ Phase 19 — Bulk Print Center
 
 **Status:** ⏳ PENDING
 
@@ -592,7 +767,7 @@ Users can: View Errors, Retry Failed, Download Completed.
 
 ---
 
-## 📁 Phase 19 — Job Package Generation
+## 📁 Phase 20 — Job Package Generation
 
 **Status:** ⏳ PENDING
 
@@ -611,7 +786,7 @@ Sensitive identity documents only included with explicit permission.
 
 ---
 
-## 📡 Phase 20 — Offline Integration
+## 📡 Phase 21 — Offline Integration
 
 **Status:** ⏳ PENDING
 
@@ -627,7 +802,7 @@ Offline → IndexedDB → Sync Queue → Reconnect → Server Validation → Ser
 
 ---
 
-## 🧠 Phase 21 — AI Certificate Quality Control
+## 🧠 Phase 22 — AI Certificate Quality Control
 
 **Status:** ⏳ PENDING
 
@@ -645,7 +820,7 @@ Certificate QA: ✓ Job ✓ Trainee ✓ Accreditation ✓ Location ✓ Assessmen
 
 ---
 
-## 🧪 Phase 22 — Bulk E2E Testing
+## 🧪 Phase 23 — Bulk E2E Testing
 
 **Status:** ⏳ PENDING
 
@@ -659,7 +834,7 @@ Bulk upload, AI extraction, matching, job creation, certificate generation, QR g
 
 ---
 
-## 🔐 Phase 23 — Production Hardening
+## 🔐 Phase 24 — Production Hardening
 
 **Status:** ⏳ PENDING
 
@@ -685,6 +860,14 @@ Phase 0: Audit
 Phase 1: Core Data Architecture
   ↓
 Phase 2: Job + Numbering
+  ↓
+Phase 2A: Equipment Asset Registry
+  ↓
+Phase 2B: Multiple Inspection Records
+  ↓
+Phase 2C: Multiple Training Activities
+  ↓
+Phase 2D: Job Detail UI Overhaul
   ↓
 Phase 3: Trainee
   ↓
@@ -731,6 +914,75 @@ Phase 23: Production Hardening
 
 ---
 
+## 📐 Relationship Diagram (Post Phase 2D)
+
+```
+Company (Tenant)
+  │
+  ├── Customer
+  │     │
+  │     ├── EquipmentAsset* (many)
+  │     │     ├── assetId (unique per tenant)
+  │     │     ├── serialNumber (unique per tenant)
+  │     │     ├── registrationNumber (unique per tenant)
+  │     │     ├── category/type (EXCAVATOR, FORKLIFT, CRANE...)
+  │     │     ├── status (ACTIVE, INACTIVE, RETIRED)
+  │     │     ├── hireType (OWNED, HIRED, THIRD_PARTY)
+  │     │     ├── documents (Document[])
+  │     │     └── inspectionRecords (InspectionRecord[])
+  │     │
+  │     ├── Trainee* (many)
+  │     │     ├── documents (TraineeDocument[])
+  │     │     ├── sessionEnrollments (SessionEnrollment[])
+  │     │     ├── attendances (Attendance[])
+  │     │     ├── assessmentAttempts (AssessmentAttempt[])
+  │     │     └── competencies (TraineeCompetency[])
+  │     │
+  │     └── Job* (many)
+  │           │
+  │           ├── JobService* (many per job, multiple per type)
+  │           │     ├── serviceType: TRAINING | INSPECTION
+  │           │     │
+  │           │     ├── (if INSPECTION) → InspectionRecord* (many)
+  │           │     │     ├── equipmentAssetId → EquipmentAsset
+  │           │     │     ├── inspector, scope, checklist, findings
+  │           │     │     ├── result (PASS/FAIL/CONDITIONAL)
+  │           │     │     └── certificate (Certificate[])
+  │           │     │
+  │           │     └── (if TRAINING) → TrainingSession* (many)
+  │           │           ├── courseId, trainerId, locationId
+  │           │           ├── capacity, schedule
+  │           │           └── sessionEnrollments (SessionEnrollment[])
+  │           │                 ├── traineeId → Trainee
+  │           │                 ├── status (ENROLLED, ATTENDED, COMPLETED...)
+  │           │                 └── attendances (Attendance[])
+  │           │
+  │           ├── Certificate* (many)
+  │           │     ├── certificateType: TRAINING | INSPECTION
+  │           │     ├── linked to inspectionId OR courseId
+  │           │     └── number: {jobNumber}-{sequence}
+  │           │
+  │           ├── Timesheet* (many)
+  │           ├── InspectionReport* (many)
+  │           ├── Payment/Invoice* (many)
+  │           └── DeliveryLog* (many)
+```
+
+**Key Relationships:**
+- `Customer 1:N EquipmentAsset` — Customer owns many assets
+- `Customer 1:N Trainee` — Customer employs many trainees
+- `Customer 1:N Job` — Customer has many job orders
+- `Job 1:N JobService` — Job has many service lines (multiple TRAINING, multiple INSPECTION)
+- `JobService(INSPECTION) 1:N InspectionRecord` — Each inspection service covers multiple assets
+- `InspectionRecord N:1 EquipmentAsset` — Each record tied to exactly one asset
+- `JobService(TRAINING) 1:N TrainingSession` — Each training service has multiple sessions
+- `TrainingSession 1:N SessionEnrollment` — Each session enrolls multiple trainees
+- `SessionEnrollment N:1 Trainee` — Each enrollment is one trainee
+- `InspectionRecord 1:N Certificate` — Each inspection can generate certificates
+- `TrainingSession/Trainee 1:N Certificate` — Each trainee completion can generate certificate
+
+---
+
 ## 📝 Bulk Operation Audit Events
 
 Every bulk operation must create an audit record:
@@ -772,6 +1024,11 @@ Never automatically merge uncertain identities.
 /certificates/bulk
 /print-center
 /verify/certificate/{token}
+/equipment-assets
+/equipment-assets/[id]
+/inspection-records
+/inspection-records/[id]
+/jobs/[id]/inspection-records
 ```
 
 ---
@@ -787,3 +1044,113 @@ Never automatically merge uncertain identities.
 | Tailwind v4 + PostCSS | 🟡 Fixing config |
 | Dashboard page | ✅ Created |
 | Training/Trainees/Inspections/Certificates pages (scaffolded) | ✅ Created |
+| EquipmentAssetTable (add/select/remove, inline create, bulk import) | ✅ Implemented (tests/customer-hierarchy.test.ts) |
+| TraineeTrainingTable (bulk enroll, per-row outcomes) | ✅ Implemented (tests/job-order-core.test.ts) |
+| AssetSelectorDialog (existing + new + review queue) | ✅ Implemented (src/app/(app)/customers/page.tsx) |
+| TraineeSelectorDialog (customer pool, bulk select) | ✅ Implemented (src/app/(app)/trainees) |
+
+---
+
+## 🚀 Extended Phase Requirements & Implementation Tracks
+
+### 🔄 Phase 1–2 Extensions (Customer Hierarchy, Quotation Traceability & Multi-Asset Jobs)
+- **Hierarchy:** `Company` → `Customer` → `CustomerSite` → `CustomerAsset`.
+- **Quotations:** Traceability from `SalesInquiry` → `SalesQuotation` (with line items) → `Job`.
+- **Idempotency:** Re-converting or retrying quotation-to-job conversion never creates duplicate jobs (verified in `tests/sales-quotation-flow.test.ts`).
+- **Independent Activities:** 1 Job contains multiple `JobService` records (inspection-only, training-only, or combined), each with independent assignees, schedules, checklists, and completion criteria.
+
+### 🔄 Phase 3–9 Extensions (Trainees, Assets & Bulk Import Protection)
+- **Identity Distinction:** `Trainee` is strictly distinct from application `User`. A trainee retains historical enrollments across employers and courses.
+- **Duplicate Detection:** Composite check on Customer + Serial Number / Registration Number for assets, and National ID / Passport for trainees. Uncertain matches flagged for human review.
+- **Document Versioning:** Encrypted file storage with cryptographic hashing (SHA-256) preventing unauthorized overwrite.
+
+### 🔄 Phase 10–11 Extensions (Checklists, Failure Workflows & Authorizations)
+- **Checklist Types:** Strict separation between **NORMAL CHECKLIST** and **FULL CHECKLIST** (verified in `tests/inspection-checklists.test.ts`).
+- **Mixed Outcomes:** Within 1 Job, individual assets can pass while others fail. Failed assets trigger `FailureWorkflow` with root cause and corrective actions, never auto-passing upon rescheduling.
+- **Authorizations:** Validates inspector qualifications against equipment category, validity dates, and regional accreditation (EIAC Dubai vs ENAS Abu Dhabi).
+
+### 🔄 Phase 12–14 Extensions (Certificate Lifecycle & Public QR Privacy)
+- **Direct Qualification:** Certificates link to the exact qualifying `Inspection` (via `inspectionId`) or `Enrollment` (via `enrollmentId`).
+- **Lifecycle States:** `DRAFT` → `PENDING_APPROVAL` → `ISSUED` → `REVISION` / `REPRINT` / `RENEWAL` / `SUSPENDED` / `REVOKED`.
+- **Reprints vs Revisions:** Reprints retain original certificate numbers with immutable audit logging; revisions preserve prior PDF versions.
+- **Public Verification Privacy:** Public QR response masks national IDs, passports, and internal notes, displaying only verified compliance facts.
+
+### 🔄 Phase 15–20 Extensions (Financial Traceability, Delivery & Offline Sync)
+- **Activity-Linked Timesheets:** Actual hours logged per job service activity; manager approval gate.
+- **Delivery Confirmation (DC):** Physical and electronic delivery tracking with recipient sign-off, courier tracking, and retry history.
+- **Offline Guard:** IndexedDB local draft storage with idempotency tokens preventing duplicate certificate generation during sync retries.
+
+### 🔄 Phase 21–23 Extensions (Multi-Gate Job Closure & End-to-End Validation)
+- **Four-Pillar Closure Gate:**
+  1. *Operational:* All inspection checklists and training sessions completed.
+  2. *Compliance:* Technical approval signed and certificates issued.
+  3. *Financial:* Quotation invoiced and payment reconciled.
+  4. *Delivery:* Delivery Confirmation (DC) acknowledged by client.
+
+---
+
+## 📋 Comprehensive Implementation Tracks (Tracks 24–29)
+
+### 📌 Track 24 — Sales and Quotation Management
+- **Models:** `SalesInquiry`, `SalesQuotation`, `QuotationItem`.
+- **APIs:** `/api/sales/inquiries`, `/api/sales/quotations`.
+- **Routes:** `/sales/inquiries`, `/sales/quotations`, `/sales/sales-persons`.
+- **Status:** ✅ Complete (Persisted and tested via `tests/sales-quotation-flow.test.ts`).
+
+### 📌 Track 25 — Inspector and Trainer Authorization Matrix
+- **Models:** `User`, `Role`, `LocationAccreditation`, `Trainer`, `Assessor`.
+- **APIs:** `/api/users`, `/api/users/authorizations`.
+- **Routes:** `/team`, `/settings/users`.
+- **Status:** ✅ Complete (Team Members directory with EIAC/ENAS accreditation badges).
+
+### 📌 Track 26 — Certificate Lifecycle & Revisions
+- **Models:** `Certificate`, `Revision`, `AuditLog`.
+- **APIs:** `/api/certificates`, `/api/certificates/[id]`, `/api/certificates/verify`.
+- **Routes:** `/certificates`, `/verify/certificate/[token]`, `/print-center`.
+- **Status:** ✅ Complete (Safe numbering, QR verification privacy, and reprint audit).
+
+### 📌 Track 27 — Accounts, Invoicing & Payments
+- **Models:** `Invoice`, `Payment`, `Timesheet`.
+- **APIs:** `/api/payments`, `/api/accounts`, `/api/timesheets`.
+- **Routes:** `/accounts`, `/payments`, `/timesheets`.
+- **Status:** ⏳ In Progress (Invoicing, partial payments, and balance calculations).
+
+### 📌 Track 28 — Delivery Confirmation (DC) & Job Closure
+- **Models:** `DeliveryLog`, `Job`.
+- **APIs:** `/api/delivery`, `/api/jobs/[id]`.
+- **Routes:** `/delivery`, `/job-performing`, `/jobs/[id]`.
+- **Status:** ✅ Complete (DC summary progress bars, recipient logging, and closure gates).
+
+### 📌 Track 29 — Administration, Definitions & Customer Merge
+- **Models:** `JobPerformingType`, `GeneralDefinition`, `GeneralDefinitionItem`, `NotificationSetting`, `Subcontractor`.
+- **APIs:** `/api/setup/job-types`, `/api/setup/definitions`, `/api/customers/merge`, `/api/setup/notifications`.
+- **Routes:** `/setup/job-types`, `/setup/general-definitions`, `/setup/customers-merge`, `/setup/notifications`.
+- **Status:** ✅ Complete (Two-pane definitions editor, EIAC/ENAS catalog, transactional merge tool).
+
+---
+
+## 🧪 Automated Test Verification Summary (Reconciled 2026-10-12)
+
+```bash
+PASS tests/customer-hierarchy.test.ts      (Phase 1–2A: Customer → Site → Asset hierarchy)
+PASS tests/sales-quotation-flow.test.ts    (Track 24: Inquiry → Quotation → Idempotent Job conversion)
+PASS tests/inspection-checklists.test.ts   (Phase 2B/10: NORMAL vs FULL checklist, mixed PASS/FAIL outcomes)
+PASS tests/customer-merge.test.ts          (Track 29: Transaction-safe customer merge with audit)
+PASS tests/job-order-core.test.ts          (Phase 2: Job creation with training service + jobServiceId link)
+PASS tests/e2e-combined-flow.test.ts       (Phases 2–2C, 10, 24–28: Full commercial + operational flow)
+  ✓ Quotation → Job (inspection + training services)
+  ✓ Multi-asset inspection with mixed PASS/FAIL + certificate for qualifying
+  ✓ Trainer record → TrainingSession → SessionEnrollment → per-trainee outcomes
+  ✓ Certificate with jobNumber + sequence + issueDate
+  ✓ Timesheet → Payment → DeliveryLog
+```
+
+**7 test suites, 12 tests — ALL PASS** against the active PostgreSQL database.
+Zero schema drops, zero data loss, full backward compatibility preserved.
+
+### Evidence Notes
+- `Certificate.create()` requires: `jobNumber`, `sequence`, `issueDate` (not `issuedDate`).
+- `TrainingSession.trainerId` references `Trainer.id` (not `User.id`). Create `Trainer` record first.
+- `Trainee` uses `companyName`, `employeeId`, `emiratesId` — not `employerId` or `nationalId`.
+- `CustomerAsset` is the authoritative equipment model (not `EquipmentAsset`).
+

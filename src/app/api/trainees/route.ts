@@ -18,10 +18,16 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
 
+    const locationIdParam = searchParams.get('locationId');
+    const locationId = locationIdParam ? parseInt(locationIdParam) : undefined;
+    const companyName = searchParams.get('companyName') || undefined;
+
     const filters: TraineeFilters = {
       companyId: session.user.companyId,
       search,
       status,
+      locationId,
+      companyName,
       page,
       pageSize,
       sortBy,
@@ -43,16 +49,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-const body: CreateTraineeInput = await request.json();
+    const body: CreateTraineeInput = await request.json();
 
     if (!body.firstName || !body.lastName) {
       return NextResponse.json({ error: 'First name and last name are required' }, { status: 400 });
+    }
+
+    // Check duplicate
+    const duplicate = await traineeService.checkDuplicate(session.user.companyId, {
+      email: body.email,
+      employeeId: body.employeeId,
+      emiratesId: body.emiratesId,
+    });
+
+    if (duplicate.isDuplicate) {
+      return NextResponse.json(
+        { error: `A trainee with this ${duplicate.field} already exists`, field: duplicate.field },
+        { status: 409 }
+      );
     }
 
     const trainee = await traineeService.create({
       ...body,
       status: body.status ?? 'active',
       hireDate: body.hireDate ? new Date(body.hireDate) : undefined,
+      dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
       companyId: session.user.companyId,
     });
 
@@ -60,7 +81,7 @@ const body: CreateTraineeInput = await request.json();
   } catch (error: any) {
     console.error('Error creating trainee:', error);
     if (error.code === 'P2002') {
-      return NextResponse.json({ error: 'A trainee with this email or employee ID already exists' }, { status: 409 });
+      return NextResponse.json({ error: 'A trainee with this email, employee ID, or Emirates ID already exists' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

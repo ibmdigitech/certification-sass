@@ -20,7 +20,13 @@ export interface CreateTraineeInput {
   email?: string;
   phone?: string;
   employeeId?: string;
+  companyName?: string;
   jobTitle?: string;
+  emiratesId?: string;
+  nationality?: string;
+  dateOfBirth?: Date;
+  photoUrl?: string;
+  locationId?: number;
   status?: string;
   hireDate?: Date;
 }
@@ -33,6 +39,8 @@ export interface TraineeFilters {
   companyId: number;
   search?: string;
   status?: string;
+  locationId?: number;
+  companyName?: string;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -54,6 +62,7 @@ export class TraineeService {
         ...data,
         status: data.status ?? 'active',
         hireDate: data.hireDate ? new Date(data.hireDate) : null,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
       },
     });
   }
@@ -75,7 +84,7 @@ export class TraineeService {
   }
 
   async findMany(filters: TraineeFilters): Promise<PaginatedTrainees> {
-    const { companyId, search, status, page = 1, pageSize = 10, sortBy = 'createdAt', sortOrder = 'desc' } = filters;
+    const { companyId, search, status, locationId, companyName, page = 1, pageSize = 10, sortBy = 'createdAt', sortOrder = 'desc' } = filters;
 
     const where: any = { companyId };
 
@@ -85,10 +94,15 @@ export class TraineeService {
         { lastName: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { employeeId: { contains: search, mode: 'insensitive' } },
+        { emiratesId: { contains: search, mode: 'insensitive' } },
+        { nationality: { contains: search, mode: 'insensitive' } },
+        { companyName: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     if (status) where.status = status;
+    if (locationId) where.locationId = locationId;
+    if (companyName) where.companyName = { contains: companyName, mode: 'insensitive' };
 
     const [trainees, total] = await Promise.all([
       prisma.trainee.findMany({
@@ -119,12 +133,13 @@ export class TraineeService {
   }
 
   async update(data: UpdateTraineeInput): Promise<Trainee> {
-    const { id, hireDate, ...rest } = data;
+    const { id, hireDate, dateOfBirth, ...rest } = data;
     return prisma.trainee.update({
       where: { id },
       data: {
         ...rest,
         hireDate: hireDate ? new Date(hireDate) : undefined,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       },
     });
   }
@@ -146,6 +161,45 @@ export class TraineeService {
 
   async getStatuses(): Promise<string[]> {
     return ['active', 'inactive', 'on_leave', 'terminated'];
+  }
+
+  async checkDuplicate(companyId: number, params: {
+    email?: string;
+    employeeId?: string;
+    emiratesId?: string;
+    excludeId?: number;
+  }): Promise<{ isDuplicate: boolean; field?: string; trainee?: Trainee }> {
+    const { email, employeeId, emiratesId, excludeId } = params;
+
+    const conditions: any[] = [];
+    if (email) conditions.push({ email });
+    if (employeeId) conditions.push({ employeeId });
+    if (emiratesId) conditions.push({ emiratesId });
+
+    if (conditions.length === 0) {
+      return { isDuplicate: false };
+    }
+
+    const where: any = {
+      companyId,
+      OR: conditions,
+    };
+
+    if (excludeId) {
+      where.NOT = { id: excludeId };
+    }
+
+    const existing = await prisma.trainee.findFirst({ where });
+    if (!existing) {
+      return { isDuplicate: false };
+    }
+
+    let field = 'record';
+    if (email && existing.email === email) field = 'email';
+    else if (employeeId && existing.employeeId === employeeId) field = 'employeeId';
+    else if (emiratesId && existing.emiratesId === emiratesId) field = 'emiratesId';
+
+    return { isDuplicate: true, field, trainee: existing };
   }
 }
 

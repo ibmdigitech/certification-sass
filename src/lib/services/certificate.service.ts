@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { CertificateNumberService } from './certificate-number.service';
 
 const prisma = new PrismaClient();
@@ -46,8 +46,8 @@ export class CertificateService {
     count: number,
     baseData: Omit<CreateCertificateInput, 'jobId' | 'companyId'> = {}
   ) {
-    const results = [];
-    const errors = [];
+    const results: any[] = [];
+    const errors: Array<{ index: number; error: string }> = [];
 
     for (let i = 0; i < count; i++) {
       try {

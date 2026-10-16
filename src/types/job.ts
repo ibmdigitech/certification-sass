@@ -1,10 +1,14 @@
 export type JobStatus =
-  | 'pending'
-  | 'scheduled'
-  | 'in_progress'
-  | 'completed'
-  | 'cancelled'
-  | 'on_hold';
+  | 'NEW'
+  | 'PENDING'
+  | 'SCHEDULED'
+  | 'IN_PROGRESS'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
+  | 'COMPLETED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'ON_HOLD';
 
 export interface Job {
   id: number;
@@ -81,19 +85,27 @@ export interface JobListResponse {
 }
 
 export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
-  pending: 'Pending',
-  scheduled: 'Scheduled',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-  on_hold: 'On Hold',
+  NEW: 'New',
+  PENDING: 'Pending',
+  SCHEDULED: 'Scheduled',
+  IN_PROGRESS: 'In Progress',
+  PENDING_APPROVAL: 'Pending Approval',
+  APPROVED: 'Approved',
+  COMPLETED: 'Completed',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+  ON_HOLD: 'On Hold',
 };
 
 export const JOB_STATUS_COLORS: Record<JobStatus, string> = {
-  pending: 'bg-gray-100 text-gray-800 border-gray-200',
-  scheduled: 'bg-blue-100 text-blue-800 border-blue-200',
-  in_progress: 'bg-amber-100 text-amber-800 border-amber-200',
-  completed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
-  on_hold: 'bg-purple-100 text-purple-800 border-purple-200',
+  NEW: 'bg-gray-100 text-gray-800 border-gray-200',
+  PENDING: 'bg-gray-100 text-gray-800 border-gray-200',
+  SCHEDULED: 'bg-blue-100 text-blue-800 border-blue-200',
+  IN_PROGRESS: 'bg-amber-100 text-amber-800 border-amber-200',
+  PENDING_APPROVAL: 'bg-purple-100 text-purple-800 border-purple-200',
+  APPROVED: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  COMPLETED: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  DELIVERED: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  CANCELLED: 'bg-red-100 text-red-800 border-red-200',
+  ON_HOLD: 'bg-orange-100 text-orange-800 border-orange-200',
 };

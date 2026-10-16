@@ -82,7 +82,7 @@ export interface UpdateQuestionInput {
   order?: number;
 }
 
-export interface CreateEnrollmentInput {
+interface CreateEnrollmentInput {
   companyId: number;
   courseId: number;
   traineeId: number;
@@ -153,14 +153,16 @@ export class TrainingCourseService {
     category?: string;
     search?: string;
     activeOnly?: boolean;
+    locationId?: number;
     page?: number;
     limit?: number;
   }) {
-    const { status, category, search, activeOnly, page = 1, limit = 20 } = options ?? {};
+    const { status, category, search, activeOnly, locationId, page = 1, limit = 20 } = options ?? {};
 
     const where: Record<string, unknown> = { companyId };
     if (status) where.status = status;
     if (category) where.category = category;
+    if (locationId) where.locationId = locationId;
     if (activeOnly) where.status = 'ACTIVE';
     if (search) {
       where.OR = [
@@ -174,6 +176,8 @@ export class TrainingCourseService {
       prisma.trainingCourse.findMany({
         where,
         include: {
+          location: { select: { id: true, code: true, name: true } },
+          accreditation: { select: { id: true, code: true, name: true } },
           _count: { select: { enrollments: true, modules: true } },
         },
         orderBy: { title: 'asc' },

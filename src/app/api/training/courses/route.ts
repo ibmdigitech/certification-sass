@@ -21,12 +21,15 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || undefined;
     const search = searchParams.get('search') || undefined;
     const activeOnly = searchParams.get('activeOnly') === 'true';
+    const locationIdParam = searchParams.get('locationId');
+    const locationId = locationIdParam ? parseInt(locationIdParam) : undefined;
 
     const result = await TrainingCourseService.listCourses(session.user.companyId, {
       status,
       category,
       search,
       activeOnly,
+      locationId,
       page,
       limit,
     });

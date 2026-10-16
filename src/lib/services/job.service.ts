@@ -402,15 +402,30 @@ export class JobService {
     customerId?: number;
     engineerId?: number;
     serviceType?: string;
+    jobNumber?: string;
+    search?: string;
     page?: number;
     limit?: number;
   }) {
-    const { status, customerId, engineerId, serviceType, page = 1, limit = 20 } = options ?? {};
+    const { status, customerId, engineerId, serviceType, jobNumber, search, page = 1, limit = 20 } = options ?? {};
 
     const where: Record<string, unknown> = { companyId };
     if (status) where.status = status;
     if (customerId) where.customerId = customerId;
     if (engineerId) where.engineerId = engineerId;
+    if (jobNumber) {
+      where.jobNumber = { contains: jobNumber, mode: 'insensitive' };
+    }
+    if (search) {
+      where.OR = [
+        { jobNumber: { contains: search, mode: 'insensitive' } },
+        { scope: { contains: search, mode: 'insensitive' } },
+        { customerReference: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (serviceType) {
+      where.jobServices = { some: { serviceType: serviceType as any } };
+    }
 
     const [jobs, total] = await Promise.all([
       prisma.job.findMany({
@@ -537,6 +552,205 @@ export class JobService {
       }
 
       return js;
+    });
+  }
+
+  // ── Status transition state machine ─────────────────────────────
+  // Defines which status transitions are permitted and the roles allowed
+  // to perform each action. Prevents invalid lifecycle jumps.
+  private static readonly TRANSITIONS: Record<string, string[]> = {
+    NEW: ['SCHEDULED', 'CANCELLED', 'ON_HOLD'],
+    PENDING: ['SCHEDULED', 'CANCELLED', 'ON_HOLD'],
+    SCHEDULED: ['IN_PROGRESS', 'CANCELLED', 'ON_HOLD', 'NEW'],
+    IN_PROGRESS: ['COMPLETED', 'PENDING_APPROVAL', 'ON_HOLD', 'CANCELLED'],
+    PENDING_APPROVAL: ['APPROVED', 'IN_PROGRESS', 'CANCELLED'],
+    APPROVED: ['COMPLETED', 'CANCELLED'],
+    COMPLETED: [],
+    CANCELLED: [],
+    ON_HOLD: ['SCHEDULED', 'IN_PROGRESS', 'CANCELLED'],
+  };
+
+  private static readonly ACTION_ROLES: Record<string, string[]> = {
+    ASSIGN: ['ADMIN', 'MANAGER', 'COORDINATOR', 'SUPERVISOR'],
+    RESCHEDULE: ['ADMIN', 'MANAGER', 'COORDINATOR', 'SUPERVISOR'],
+    START: ['ADMIN', 'MANAGER', 'INSPECTOR', 'ENGINEER', 'TRAINER', 'SUPERVISOR'],
+    SUBMIT_FOR_APPROVAL: ['ADMIN', 'MANAGER', 'INSPECTOR', 'ENGINEER', 'TRAINER', 'SUPERVISOR'],
+    APPROVE: ['ADMIN', 'MANAGER', 'REVIEWER', 'APPROVER'],
+    COMPLETE: ['ADMIN', 'MANAGER', 'INSPECTOR', 'ENGINEER', 'TRAINER', 'SUPERVISOR'],
+    GENERATE_CERTIFICATE: ['ADMIN', 'MANAGER', 'REVIEWER', 'APPROVER'],
+    CONFIRM_DELIVERY: ['ADMIN', 'MANAGER', 'COORDINATOR'],
+    CANCEL: ['ADMIN', 'MANAGER'],
+  };
+
+  static canTransition(from: string, to: string): boolean {
+    const allowed = this.TRANSITIONS[from?.toUpperCase()] ?? [];
+    return allowed.includes(to?.toUpperCase());
+  }
+
+  static canRolePerform(action: string, role?: string | null): boolean {
+    const allowed = this.ACTION_ROLES[action] ?? [];
+    if (!role) return false;
+    return allowed.includes(role.toUpperCase());
+  }
+
+  static async transitionJob(
+    jobId: number,
+    companyId: number,
+    userId: number,
+    userRole: string | null,
+    action: string,
+    payload: { targetStatus?: string; reason?: string; engineerId?: number; inspectorId?: number; scheduledDate?: string; rescheduledBy?: number } = {}
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const job = await tx.job.findFirst({
+        where: { id: jobId, companyId },
+        select: { id: true, status: true, jobNumber: true, certificates: { select: { id: true } } },
+      });
+      if (!job) throw new Error('Job not found');
+
+      const current = (job.status || 'NEW').toUpperCase();
+
+      switch (action.toUpperCase()) {
+        case 'ASSIGN': {
+          if (!this.canRolePerform('ASSIGN', userRole)) {
+            throw new Error('Your role is not authorized to assign personnel.');
+          }
+          const data: any = {};
+          if (payload.engineerId !== undefined) data.engineerId = payload.engineerId;
+          if (payload.inspectorId !== undefined) data.inspectorId = payload.inspectorId;
+          if (payload.scheduledDate) data.scheduledDate = new Date(payload.scheduledDate);
+          // Assignment moves a NEW job to SCHEDULED
+          if (current === 'NEW' || current === 'PENDING') data.status = 'SCHEDULED';
+          const updated = await tx.job.update({ where: { id: jobId }, data });
+          await tx.auditLog.create({
+            data: { companyId, userId, action: 'JOB_ASSIGNED', entityType: 'Job', entityId: jobId, tenantId: companyId, newValue: { engineerId: payload.engineerId, inspectorId: payload.inspectorId } as any },
+          });
+          return updated;
+        }
+
+        case 'RESCHEDULE': {
+          if (!this.canRolePerform('RESCHEDULE', userRole)) {
+            throw new Error('Your role is not authorized to reschedule.');
+          }
+          if (!payload.scheduledDate) throw new Error('Reschedule requires a new scheduled date.');
+          const previousDate = await tx.job.findUnique({ where: { id: jobId }, select: { scheduledDate: true } });
+          const updated = await tx.job.update({
+            where: { id: jobId },
+            data: { scheduledDate: new Date(payload.scheduledDate), status: current === 'NEW' || current === 'PENDING' ? 'SCHEDULED' : undefined },
+          });
+          // Record an auditable reschedule entry
+          await (tx as any).reschedule.create({
+            data: {
+              companyId,
+              jobId,
+              reason: payload.reason || null,
+              suggestedDate: new Date(payload.scheduledDate),
+              approvedDate: new Date(payload.scheduledDate),
+              rescheduledBy: userId,
+              status: 'approved',
+            },
+          });
+          await tx.auditLog.create({
+            data: { companyId, userId, action: 'JOB_RESCHEDULED', entityType: 'Job', entityId: jobId, tenantId: companyId, previousValue: { scheduledDate: previousDate?.scheduledDate }, newValue: { scheduledDate: payload.scheduledDate, reason: payload.reason } as any },
+          });
+          return updated;
+        }
+
+        case 'START': {
+          if (!this.canRolePerform('START', userRole)) {
+            throw new Error('Your role is not authorized to start this job.');
+          }
+          if (!this.canTransition(current, 'IN_PROGRESS')) {
+            throw new Error(`Cannot start a job in "${current}" status. Valid next states: ${(this.TRANSITIONS[current] ?? []).join(', ') || 'none'}.`);
+          }
+          const updated = await tx.job.update({ where: { id: jobId }, data: { status: 'IN_PROGRESS' } });
+          await tx.auditLog.create({ data: { companyId, userId, action: 'JOB_STARTED', entityType: 'Job', entityId: jobId, tenantId: companyId, newValue: { status: 'IN_PROGRESS' } as any } });
+          return updated;
+        }
+
+        case 'SUBMIT_FOR_APPROVAL': {
+          if (!this.canRolePerform('SUBMIT_FOR_APPROVAL', userRole)) {
+            throw new Error('Your role is not authorized to submit for approval.');
+          }
+          if (!this.canTransition(current, 'PENDING_APPROVAL')) {
+            throw new Error(`Cannot submit a job in "${current}" status for approval. Complete the service work first.`);
+          }
+          const updated = await tx.job.update({ where: { id: jobId }, data: { status: 'PENDING_APPROVAL' } });
+          await tx.auditLog.create({ data: { companyId, userId, action: 'JOB_SUBMITTED_FOR_APPROVAL', entityType: 'Job', entityId: jobId, tenantId: companyId, newValue: { status: 'PENDING_APPROVAL' } as any } });
+          return updated;
+        }
+
+        case 'APPROVE': {
+          if (!this.canRolePerform('APPROVE', userRole)) {
+            throw new Error('Your role is not authorized to approve. Approval requires ADMIN, MANAGER, REVIEWER or APPROVER.');
+          }
+          if (!this.canTransition(current, 'APPROVED')) {
+            throw new Error(`Cannot approve a job in "${current}" status. Only jobs pending approval can be approved.`);
+          }
+          const updated = await tx.job.update({ where: { id: jobId }, data: { status: 'APPROVED' } });
+          await tx.auditLog.create({ data: { companyId, userId, action: 'JOB_APPROVED', entityType: 'Job', entityId: jobId, tenantId: companyId, newValue: { status: 'APPROVED' } as any } });
+          return updated;
+        }
+
+        case 'COMPLETE': {
+          if (!this.canRolePerform('COMPLETE', userRole)) {
+            throw new Error('Your role is not authorized to complete this job.');
+          }
+          if (!this.canTransition(current, 'COMPLETED')) {
+            throw new Error(`Cannot complete a job in "${current}" status. Valid next states: ${(this.TRANSITIONS[current] ?? []).join(', ') || 'none'}.`);
+          }
+          const updated = await tx.job.update({ where: { id: jobId }, data: { status: 'COMPLETED' } });
+          // Mark all service lines completed
+          await tx.jobService.updateMany({
+            where: { jobId, status: { not: 'COMPLETED' } },
+            data: { status: 'COMPLETED', completionDate: new Date() },
+          });
+          await tx.auditLog.create({ data: { companyId, userId, action: 'JOB_COMPLETED', entityType: 'Job', entityId: jobId, tenantId: companyId, newValue: { status: 'COMPLETED' } as any } });
+          return updated;
+        }
+
+        case 'GENERATE_CERTIFICATE': {
+          if (!this.canRolePerform('GENERATE_CERTIFICATE', userRole)) {
+            throw new Error('Your role is not authorized to generate certificates.');
+          }
+          if (current !== 'COMPLETED' && current !== 'APPROVED') {
+            throw new Error(`Certificates can only be generated for completed/approved jobs. Current status: "${current}". Complete and approve the job first.`);
+          }
+          // Certificate issuance is delegated to the certificates API which enforces
+          // eligibility, numbering and QR rules. Here we only guard the prerequisite.
+          return job;
+        }
+
+        case 'CONFIRM_DELIVERY': {
+          if (!this.canRolePerform('CONFIRM_DELIVERY', userRole)) {
+            throw new Error('Your role is not authorized to confirm delivery.');
+          }
+          if (current !== 'COMPLETED' && current !== 'APPROVED') {
+            throw new Error(`Delivery can only be confirmed for completed/approved jobs. Current status: "${current}".`);
+          }
+          if (job.certificates.length === 0) {
+            throw new Error('No certificate has been issued for this job. Generate a certificate before confirming delivery.');
+          }
+          const updated = await tx.job.update({ where: { id: jobId }, data: { status: 'DELIVERED' } });
+          await tx.auditLog.create({ data: { companyId, userId, action: 'JOB_DELIVERY_CONFIRMED', entityType: 'Job', entityId: jobId, tenantId: companyId, newValue: { status: 'DELIVERED' } as any } });
+          return updated;
+        }
+
+        case 'CANCEL': {
+          if (!this.canRolePerform('CANCEL', userRole)) {
+            throw new Error('Your role is not authorized to cancel jobs.');
+          }
+          if (!this.canTransition(current, 'CANCELLED')) {
+            throw new Error(`Cannot cancel a job in "${current}" status.`);
+          }
+          const updated = await tx.job.update({ where: { id: jobId }, data: { status: 'CANCELLED', cancelReason: payload.reason || null } });
+          await tx.auditLog.create({ data: { companyId, userId, action: 'JOB_CANCELLED', entityType: 'Job', entityId: jobId, tenantId: companyId, newValue: { status: 'CANCELLED', reason: payload.reason } as any } });
+          return updated;
+        }
+
+        default:
+          throw new Error(`Unknown action "${action}".`);
+      }
     });
   }
 }

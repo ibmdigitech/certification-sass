@@ -1,38 +1,44 @@
 # Master Implementation Plan, Map & Audit Log
 
 **Project:** Offline-First Inspection + Training + Certificate AI SaaS
-**Updated:** 2026-10-07
+**Updated:** 2026-10-12 (Reconciliation Audit)
 
 ---
 
 ## 📊 Live Status Table
 
-| Phase | Name | Status | Impl% | Tests | Acceptance | Blocker |
-|-------|------|--------|-------|-------|------------|---------|
-| 0 | Audit & Preservation | ✅ Complete | 100% | ✅ | ✅ | — |
-| 1 | Core Data Architecture | ⏳ Pending | 0% | — | — | Phase 0 |
-| 2 | Job Management & Numbering | ⏳ Pending | 0% | — | — | Phase 1 |
-| 3 | Trainee / Personnel | ⏳ Pending | 0% | — | — | Phase 2 |
-| 4 | Document Management Foundation | ⏳ Pending | 0% | — | — | Phase 3 |
-| 5 | ID Capture + Crop + Image | ⏳ Pending | 0% | — | — | Phase 4 |
-| 6 | AI/OCR Document Extraction | ⏳ Pending | 0% | — | — | Phase 5 |
-| 7 | Document Naming & Matching | ⏳ Pending | 0% | — | — | Phase 6 |
-| 8 | Bulk Document Upload | ⏳ Pending | 0% | — | — | Phase 7 |
-| 9 | Bulk Job Import & Creation | ⏳ Pending | 0% | — | — | Phase 8 |
-| 10 | Training / Inspection Completion | ⏳ Pending | 0% | — | — | Phase 9 |
-| 11 | Accreditation & Location Engine | ⏳ Pending | 0% | — | — | Phase 10 |
-| 12 | Certificate Numbering Engine | ⏳ Pending | 0% | — | — | Phase 11 |
-| 13 | Certificate PDF Generator | ⏳ Pending | 0% | — | — | Phase 12 |
-| 14 | QR Verification | ⏳ Pending | 0% | — | — | Phase 13 |
-| 15 | Timesheet System | ⏳ Pending | 0% | — | — | Phase 14 |
-| 16 | Timesheet PDF | ⏳ Pending | 0% | — | — | Phase 15 |
-| 17 | Bulk Certificate & Timesheet Gen | ⏳ Pending | 0% | — | — | Phase 16 |
-| 18 | Bulk Print Center | ⏳ Pending | 0% | — | — | Phase 17 |
-| 19 | Job Package Generation | ⏳ Pending | 0% | — | — | Phase 18 |
-| 20 | Offline Integration | ⏳ Pending | 0% | — | — | Phase 19 |
-| 21 | AI Certificate QA | ⏳ Pending | 0% | — | — | Phase 20 |
-| 22 | Bulk E2E Testing | ⏳ Pending | 0% | — | — | Phase 21 |
-| 23 | Production Hardening | ⏳ Pending | 0% | — | — | Phase 22 |
+| Phase | Name | Status | Impl% | Test Status | Acceptance | Blocker |
+|-------|------|--------|-------|-------------|------------|---------|
+| 0 | Audit & Preservation | ✅ ACCEPTED | 100% | ✅ PASS | ✅ | — |
+| 1 | Core Data Architecture | ✅ ACCEPTED | 100% | ✅ PASS | ✅ | — |
+| 2 | Job Management & Numbering | 🔧 IMPLEMENTED — NOT VERIFIED | 90% | ✅ PASS (job-order-core) | — | UI acceptance pending |
+| 3 | Trainee / Personnel | ⏳ IN PROGRESS | 80% | ✅ PASS (e2e-combined) | — | Duplicate detection UI pending |
+| 4 | Document Management Foundation | ❌ NOT STARTED | 0% | — | — | Phase 3 |
+| 5 | ID Capture + Crop + Image | ❌ NOT STARTED | 0% | — | — | Phase 4 |
+| 6 | AI/OCR Document Extraction | ❌ NOT STARTED | 0% | — | — | Phase 5 |
+| 7 | Document Naming & Matching | ❌ NOT STARTED | 0% | — | — | Phase 6 |
+| 8 | Bulk Document Upload | ❌ NOT STARTED | 0% | — | — | Phase 7 |
+| 9 | Bulk Job Import & Creation | ❌ NOT STARTED | 0% | — | — | Phase 8 |
+| 10 | Training / Inspection Completion | ⏳ IN PROGRESS | 75% | ✅ PASS (inspection-checklists, e2e-combined) | — | FailureWorkflow integration pending |
+| 11 | Accreditation & Location Engine | ⏳ IN PROGRESS | 70% | ✅ PASS (partial) | — | Validation rules not enforced |
+| 12 | Certificate Numbering Engine | ❌ NOT STARTED | 0% | — | — | Phase 11 |
+| 13 | Certificate PDF Generator | ❌ NOT STARTED | 0% | — | — | Phase 12 |
+| 14 | QR Verification | ❌ NOT STARTED | 0% | — | — | Phase 13 |
+| 15 | Timesheet System | ❌ NOT STARTED | 0% | — | — | Phase 14 |
+| 16 | Timesheet PDF | ❌ NOT STARTED | 0% | — | — | Phase 15 |
+| 17 | Bulk Certificate & Timesheet Gen | ❌ NOT STARTED | 0% | — | — | Phase 16 |
+| 18 | Bulk Print Center | ❌ NOT STARTED | 0% | — | — | Phase 17 |
+| 19 | Job Package Generation | ❌ NOT STARTED | 0% | — | — | Phase 18 |
+| 20 | Offline Integration | ❌ NOT STARTED | 0% | — | — | Phase 19 |
+| 21 | AI Certificate QA | ❌ NOT STARTED | 0% | — | — | Phase 20 |
+| 22 | Bulk E2E Testing | ❌ NOT STARTED | 0% | — | — | Phase 21 |
+| 23 | Production Hardening | ❌ NOT STARTED | 0% | — | — | Phase 22 |
+| **Track 24** | **Sales & Quotation Management** | 🧪 TESTING | 95% | ✅ PASS (sales-quotation-flow) | — | End-to-end acceptance pending |
+| **Track 25** | **Inspector & Trainer Authorization** | 🔧 IMPLEMENTED — NOT VERIFIED | 85% | ✅ PASS (e2e-combined) | — | Authorization matrix validation pending |
+| **Track 26** | **Certificate Lifecycle & Revisions** | 🔧 IMPLEMENTED — NOT VERIFIED | 80% | ✅ PASS (e2e-combined) | — | Reprint/revision/renewal pending |
+| **Track 27** | **Accounts, Invoicing & Payments** | ⏳ IN PROGRESS | 60% | ✅ PASS (e2e-combined) | — | Invoice generation, partial payments |
+| **Track 28** | **Delivery (DC) & Job Closure** | 🔧 IMPLEMENTED — NOT VERIFIED | 80% | ✅ PASS (e2e-combined) | — | Four-pillar closure gate pending |
+| **Track 29** | **Administration & Monitoring** | 🧪 TESTING | 90% | ✅ PASS (customer-merge) | — | Notification settings E2E pending |
 
 ---
 
@@ -114,7 +120,7 @@ Release MUST be blocked if:
 
 ## 🏛️ Phase 1 — Core Data Architecture
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE
 
 ### Goal
 
@@ -159,7 +165,7 @@ Company/Tenant → Customer → Job → Trainee/Personnel → Training/Inspectio
 
 ## 📋 Phase 2 — Job Management & Numbering
 
-**Status:** ⏳ PENDING
+**Status:** 🔧 IMPLEMENTED — NOT VERIFIED
 
 ### Goal
 
@@ -188,7 +194,7 @@ Create Job → TSC-2563741 → Save → Refresh → Same Job Number
 
 ## 👥 Phase 3 — Trainee / Personnel Management
 
-**Status:** ⏳ PENDING
+**Status:** ⏳ IN PROGRESS (80%)
 
 ### Goal
 
