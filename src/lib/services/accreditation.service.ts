@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import { validateLocationAccreditation } from '../validation/location-accreditation';
-
-const prisma = new PrismaClient();
 
 export interface ValidationResult {
   valid: boolean;
@@ -76,7 +74,7 @@ export class AccreditationEngine {
     // In a full implementation, this would query templates filtered by location/accreditation.
     const allowedTemplateIds: number[] = [];
     try {
-      const templates = await (prisma as any).certificateTemplate.findMany({
+      const templates = await prisma.certificateTemplate.findMany({
         where: { companyId, isActive: true },
       });
       allowedTemplateIds.push(...templates.map((t: any) => t.id));
@@ -91,3 +89,5 @@ export class AccreditationEngine {
     };
   }
 }
+
+

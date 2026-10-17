@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 export interface CreateEnrollmentInput {
   companyId: number;
@@ -23,14 +21,11 @@ export interface StartAssessmentAttemptInput {
   enrollmentId?: number;
   lessonProgressId?: number;
   traineeId: number;
-  maxScore: number;
 }
 
 export interface SubmitAssessmentAttemptInput {
   id: number;
   companyId: number;
-  score: number;
-  maxScore: number;
   answers: Prisma.InputJsonValue;
   timeSpent: number;
 }
@@ -325,7 +320,7 @@ export class AssessmentAttemptService {
         lessonProgressId: input.lessonProgressId,
         traineeId: input.traineeId,
         score: 0,
-        maxScore: input.maxScore,
+        maxScore: assessment.questions.reduce((sum, q) => sum + q.points, 0),
         passed: false,
         answers: {},
         startedAt: new Date(),
@@ -370,6 +365,8 @@ export class AssessmentAttemptService {
       where: { assessmentId: attempt.assessmentId },
     });
 
+    const maxScore = questions.reduce((sum, q) => sum + q.points, 0);
+
     for (const question of questions) {
       const userAnswer = (input.answers as Record<string, unknown>)[question.id.toString()];
       if (userAnswer && JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer)) {
@@ -377,13 +374,13 @@ export class AssessmentAttemptService {
       }
     }
 
-    const passed = score >= attempt.assessment.passingScore;
+    const passed = maxScore > 0 && (score / maxScore) * 100 >= attempt.assessment.passingScore;
 
     const updatedAttempt = await prisma.assessmentAttempt.update({
       where: { id: input.id, companyId: input.companyId },
       data: {
         score,
-        maxScore: input.maxScore,
+        maxScore,
         passed,
         answers: input.answers as Prisma.InputJsonValue,
         completedAt: new Date(),
@@ -519,8 +516,8 @@ export class TrainingReportService {
     const report = {
       course: { id: course.id, title: course.title, code: course.code, status: course.status },
       totalEnrollments: course.enrollments.length,
-      enrollments: course.enrollments.map(e => {
-        const progress = EnrollmentService.getEnrollmentProgress(e.id, companyId);
+      enrollments: await Promise.all(course.enrollments.map(async (e) => {
+        const progress = await EnrollmentService.getEnrollmentProgress(e.id, companyId);
         return {
           trainee: `${e.trainee.firstName} ${e.trainee.lastName}`,
           traineeId: e.traineeId,
@@ -530,7 +527,7 @@ export class TrainingReportService {
           completedAt: e.completedAt,
           ...progress,
         };
-      }),
+      })),
       modules: course.modules.map(m => ({
         id: m.id,
         title: m.title,

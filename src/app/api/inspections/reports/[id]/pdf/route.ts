@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { InspectionReportService } from '@/lib/services';
 import { InspectionReportPDFGenerator } from '@/lib/services';
 
@@ -7,9 +9,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '1');
     const reportId = parseInt(id);
 
     const report = await InspectionReportService.getReportById(reportId, companyId);

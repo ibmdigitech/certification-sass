@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import { PermissionService } from './permission.service';
 import { logAdminAction } from './audit.service';
-
-const prisma = new PrismaClient();
 
 export interface CreateRoleInput {
   companyId: number;
@@ -220,3 +218,4 @@ export class AdminRoleService {
 }
 
 export default AdminRoleService;
+

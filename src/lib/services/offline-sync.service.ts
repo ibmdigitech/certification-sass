@@ -1,6 +1,5 @@
-import { PrismaClient, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
 export type SyncOperation = 'CREATE' | 'UPDATE' | 'DELETE';
 export type SyncEntityType =
@@ -208,3 +207,7 @@ export class OfflineSyncService {
     }, {} as Record<string, number>);
   }
 }
+
+
+
+

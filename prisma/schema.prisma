@@ -33,10 +33,10 @@ model Company {
   invoices                   Invoice[]
   deliveryLogs               DeliveryLog[]
   auditLogs                  AuditLog[]
-   authSessions               AuthSession[]
-   traineeDocuments           TraineeDocument[]
-   jobServices                JobService[]
-   trainingCourses            TrainingCourse[]
+  authSessions               AuthSession[]
+  traineeDocuments           TraineeDocument[]
+  jobServices                JobService[]
+  trainingCourses            TrainingCourse[]
   trainingModules            TrainingModule[]
   trainingLessons            TrainingLesson[]
   assessments                Assessment[]
@@ -74,6 +74,8 @@ model Company {
   generalDefinitions         GeneralDefinition[]
   notificationSettings       NotificationSetting[]
   subcontractors             Subcontractor[]
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
 }
 
 model Role {
@@ -121,76 +123,76 @@ model UserPermissionOverride {
 }
 
 model User {
-  id                       Int                         @id @default(autoincrement())
-  name                     String
-  email                    String                      @unique
-  passwordHash             String
-  role                     String
-  roleId                   Int?
-  roleRef                  Role?                       @relation(fields: [roleId], references: [id])
-  companyId                Int
-  company                  Company                     @relation(fields: [companyId], references: [id])
-  lastLogin                DateTime?
-  status                   String                      @default("active")
-  jobs                     Job[]                       @relation("EngineerJobs")
-  reschedules              Reschedule[]                @relation("RescheduledBy")
-  checklistResults         ChecklistResult[]
-  revisions                Revision[]                  @relation("ApprovedBy")
-  auditLogs                AuditLog[]
-  authSessions             AuthSession[]
-  permissionOverrides      UserPermissionOverride[]
-  timesheets               Timesheet[]                 @relation("TimesheetUser")
-  approvedTimesheets       Timesheet[]                 @relation("TimesheetApprover")
-  generatedReports         InspectionReport[]          @relation("ReportGeneratedBy")
-  reviewedReports          InspectionReport[]          @relation("ReportReviewedBy")
-  approvedReports          InspectionReport[]          @relation("ReportApprovedBy")
-  signedReports            InspectionReport[]          @relation("ReportSignedBy")
-  reportSignatures         InspectionReportSignature[]
-  assignedFailureWorkflows FailureWorkflow[]           @relation("FailureWorkflowAssignee")
-  resolvedFailureWorkflows FailureWorkflow[]           @relation("FailureWorkflowResolvedBy")
-  completedFailureSteps    FailureWorkflowStep[]       @relation("FailureStepCompletedBy")
-  assignedFailureSteps     FailureWorkflowStep[]       @relation("FailureStepAssignee")
-  createdTemplates         InspectionReportTemplate[]  @relation("TemplateCreatedBy")
-  notifications            Notification[]
-  syncQueue                SyncQueue[]
-  attendances              Attendance[]
-  traineeCompetencies      TraineeCompetency[]
-  trainers                 Trainer[]
-  assessors                Assessor[]
-  inspectorJobs            Job[]                       @relation("InspectorJobs")
-  assignedJobServices      JobService[]                @relation("JobServiceResponsible")
-  assignedInspections      Inspection[]
-  approverCertificates     Certificate[]               @relation("Approver")
-  creatorCertificates      Certificate[]               @relation("Creator")
-  createdCertificateTemplates CertificateTemplate[]     @relation("CreatedBy")
-  salesInquiries           SalesInquiry[]              @relation("InquirySalesPerson")
-  salesQuotations          SalesQuotation[]            @relation("QuotationSalesPerson")
-  createdAt                DateTime                    @default(now())
-  updatedAt                DateTime                    @default(now())
+  id                          Int                         @id @default(autoincrement())
+  name                        String
+  email                       String                      @unique
+  passwordHash                String
+  role                        String
+  roleId                      Int?
+  roleRef                     Role?                       @relation(fields: [roleId], references: [id])
+  companyId                   Int
+  company                     Company                     @relation(fields: [companyId], references: [id])
+  lastLogin                   DateTime?
+  status                      String                      @default("active")
+  jobs                        Job[]                       @relation("EngineerJobs")
+  reschedules                 Reschedule[]                @relation("RescheduledBy")
+  checklistResults            ChecklistResult[]
+  revisions                   Revision[]                  @relation("ApprovedBy")
+  auditLogs                   AuditLog[]
+  authSessions                AuthSession[]
+  permissionOverrides         UserPermissionOverride[]
+  timesheets                  Timesheet[]                 @relation("TimesheetUser")
+  approvedTimesheets          Timesheet[]                 @relation("TimesheetApprover")
+  generatedReports            InspectionReport[]          @relation("ReportGeneratedBy")
+  reviewedReports             InspectionReport[]          @relation("ReportReviewedBy")
+  approvedReports             InspectionReport[]          @relation("ReportApprovedBy")
+  signedReports               InspectionReport[]          @relation("ReportSignedBy")
+  reportSignatures            InspectionReportSignature[]
+  assignedFailureWorkflows    FailureWorkflow[]           @relation("FailureWorkflowAssignee")
+  resolvedFailureWorkflows    FailureWorkflow[]           @relation("FailureWorkflowResolvedBy")
+  completedFailureSteps       FailureWorkflowStep[]       @relation("FailureStepCompletedBy")
+  assignedFailureSteps        FailureWorkflowStep[]       @relation("FailureStepAssignee")
+  createdTemplates            InspectionReportTemplate[]  @relation("TemplateCreatedBy")
+  notifications               Notification[]
+  syncQueue                   SyncQueue[]
+  attendances                 Attendance[]
+  traineeCompetencies         TraineeCompetency[]
+  trainers                    Trainer[]
+  assessors                   Assessor[]
+  inspectorJobs               Job[]                       @relation("InspectorJobs")
+  assignedJobServices         JobService[]                @relation("JobServiceResponsible")
+  assignedInspections         Inspection[]
+  approverCertificates        Certificate[]               @relation("Approver")
+  creatorCertificates         Certificate[]               @relation("Creator")
+  createdCertificateTemplates CertificateTemplate[]       @relation("CreatedBy")
+  salesInquiries              SalesInquiry[]              @relation("InquirySalesPerson")
+  salesQuotations             SalesQuotation[]            @relation("QuotationSalesPerson")
+  createdAt                   DateTime                    @default(now())
+  updatedAt                   DateTime                    @updatedAt
 }
 
 model Customer {
-  id         Int             @id @default(autoincrement())
-  companyId  Int
-  company    Company         @relation(fields: [companyId], references: [id])
-  name       String?
-  code       String?
-  address    String?
-  status     String          @default("active")
+  id          Int              @id @default(autoincrement())
+  companyId   Int
+  company     Company          @relation(fields: [companyId], references: [id])
+  name        String?
+  code        String?
+  address     String?
+  status      String           @default("active")
   creditTerms String?
-  trnNumber  String?
-  contact    String?
-  email      String?
-  phone      String?
-  sites      CustomerSite[]
-  assets     CustomerAsset[]
-  equipment  Equipment[]
-  inquiries  SalesInquiry[]
-  quotations SalesQuotation[]
-  jobs       Job[]
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  Inspection Inspection[]
+  trnNumber   String?
+  contact     String?
+  email       String?
+  phone       String?
+  sites       CustomerSite[]
+  assets      CustomerAsset[]
+  equipment   Equipment[]
+  inquiries   SalesInquiry[]
+  quotations  SalesQuotation[]
+  jobs        Job[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  Inspection  Inspection[]
 
   @@index([companyId, status])
 }
@@ -311,39 +313,39 @@ model Reschedule {
 }
 
 model Inspection {
-  id             Int                @id @default(autoincrement())
-  companyId      Int
-  company        Company            @relation(fields: [companyId], references: [id])
-  jobId          Int
-  job            Job                @relation(fields: [jobId], references: [id])
-  inspectorId    Int?
-  inspector      User?              @relation(fields: [inspectorId], references: [id])
-  clientId       Int?
-  client         Customer?          @relation(fields: [clientId], references: [id])
-  locationId     Int?
-  location       Location?          @relation(fields: [locationId], references: [id])
-  equipmentId    Int?
-  equipment      Equipment?         @relation(fields: [equipmentId], references: [id])
-  inspectionType String?
-  equipmentAsset String?
-  date           DateTime?
-  status         String?
-  checklist      Json?
-  findings       Json?
-  attachments    String[]
-  result         String?
-  reviewStatus   String?
-  approvalStatus String?
-  checklistType  String?            @default("NORMAL")
-  assetId        Int?
-  asset          CustomerAsset?     @relation(fields: [assetId], references: [id])
-  jobServiceId   Int?
-  jobService     JobService?        @relation(fields: [jobServiceId], references: [id])
-  reports        InspectionReport[]
+  id               Int                @id @default(autoincrement())
+  companyId        Int
+  company          Company            @relation(fields: [companyId], references: [id])
+  jobId            Int
+  job              Job                @relation(fields: [jobId], references: [id])
+  inspectorId      Int?
+  inspector        User?              @relation(fields: [inspectorId], references: [id])
+  clientId         Int?
+  client           Customer?          @relation(fields: [clientId], references: [id])
+  locationId       Int?
+  location         Location?          @relation(fields: [locationId], references: [id])
+  equipmentId      Int?
+  equipment        Equipment?         @relation(fields: [equipmentId], references: [id])
+  inspectionType   String?
+  equipmentAsset   String?
+  date             DateTime?
+  status           String?
+  checklist        Json?
+  findings         Json?
+  attachments      String[]
+  result           String?
+  reviewStatus     String?
+  approvalStatus   String?
+  checklistType    String?            @default("NORMAL")
+  assetId          Int?
+  asset            CustomerAsset?     @relation(fields: [assetId], references: [id])
+  jobServiceId     Int?
+  jobService       JobService?        @relation(fields: [jobServiceId], references: [id])
+  reports          InspectionReport[]
   checklistResults ChecklistResult[]
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  Certificate    Certificate[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  Certificate      Certificate[]
 
   @@index([companyId, jobId])
   @@index([jobServiceId])
@@ -385,7 +387,7 @@ model TrainingCourse {
   trainingSessions            TrainingSession[]
   certificates                Certificate[]
   createdAt                   DateTime                @default(now())
-  updatedAt                   DateTime                @default(now())
+  updatedAt                   DateTime                @updatedAt
 
   @@unique([code, companyId])
   @@index([companyId, locationId])
@@ -425,7 +427,7 @@ model TrainingLesson {
   assessments Assessment[]
   progress    LessonProgress[]
   createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
 
 model Assessment {
@@ -461,7 +463,7 @@ model Question {
   points        Int        @default(1)
   order         Int        @default(0)
   createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model Enrollment {
@@ -498,7 +500,7 @@ model LessonProgress {
   timeSpent          Int                 @default(0)
   assessmentAttempts AssessmentAttempt[]
   createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@unique([enrollmentId, lessonId])
 }
@@ -523,7 +525,7 @@ model AssessmentAttempt {
   completedAt      DateTime?
   timeSpent        Int
   createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
 model Training {
@@ -539,7 +541,7 @@ model Training {
   attachments      String[]
   trainingSessions TrainingSession[]
   createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model TrainingSession {
@@ -571,7 +573,7 @@ model TrainingSession {
   status          String                  @default("DRAFT") // DRAFT, SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
   notes           String?
   createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
   enrollments     SessionEnrollment[]
   attendances     Attendance[]
   Trainee         Trainee?                @relation(fields: [traineeId], references: [id])
@@ -623,7 +625,7 @@ model Certificate {
   deliveryLogs               DeliveryLog[]
   verifications              CertificateVerification[]
   createdAt                  DateTime                  @default(now())
-  updatedAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
 
   @@unique([jobId, sequence])
   @@index([companyId, status])
@@ -634,45 +636,45 @@ model Certificate {
 }
 
 model CertificateTemplate {
-  id                        Int               @id @default(autoincrement())
-  companyId                Int
-  company                   Company           @relation(fields: [companyId], references: [id])
-  name                     String
-  description              String?
-  type                      String
-  content                  Json
-  isDefault                 Boolean            @default(false)
-  isActive                 Boolean            @default(true)
-  createdBy                Int
-  creator                  User?              @relation("CreatedBy", fields: [createdBy], references: [id])
-  createdAt                DateTime           @default(now())
-  updatedAt                DateTime           @default(now())
+  id          Int      @id @default(autoincrement())
+  companyId   Int
+  company     Company  @relation(fields: [companyId], references: [id])
+  name        String
+  description String?
+  type        String
+  content     Json
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdBy   Int
+  creator     User?    @relation("CreatedBy", fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([companyId, name])
   @@index([companyId, isDefault])
 }
 
 model ChecklistTemplate {
-  id              Int               @id @default(autoincrement())
-  companyId       Int
-  company         Company           @relation(fields: [companyId], references: [id])
-  certificateType String
-  equipmentType   String?
-  checklistType   ChecklistType     @default(NORMAL)
-  authority       String?
-  version         String            @default("1.0")
+  id               Int                 @id @default(autoincrement())
+  companyId        Int
+  company          Company             @relation(fields: [companyId], references: [id])
+  certificateType  String
+  equipmentType    String?
+  checklistType    ChecklistType       @default(NORMAL)
+  authority        String?
+  version          String              @default("1.0")
   parentTemplateId Int?
-  parentTemplate   ChecklistTemplate? @relation("ChecklistVersion", fields: [parentTemplateId], references: [id])
+  parentTemplate   ChecklistTemplate?  @relation("ChecklistVersion", fields: [parentTemplateId], references: [id])
   childTemplates   ChecklistTemplate[] @relation("ChecklistVersion")
-  effectiveDate   DateTime?
-  status          ChecklistStatus   @default(DRAFT)
-  items           Json
-  results         ChecklistResult[]
-  equipmentNormal  Equipment[]       @relation("EquipmentNormalChecklist")
-  equipmentFull    Equipment[]       @relation("EquipmentFullChecklist")
-  createdBy       Int?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  effectiveDate    DateTime?
+  status           ChecklistStatus     @default(DRAFT)
+  items            Json
+  results          ChecklistResult[]
+  equipmentNormal  Equipment[]         @relation("EquipmentNormalChecklist")
+  equipmentFull    Equipment[]         @relation("EquipmentFullChecklist")
+  createdBy        Int?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
   @@index([companyId, certificateType, equipmentType, checklistType])
   @@index([parentTemplateId])
@@ -715,7 +717,7 @@ model Revision {
   approvedBy    Int?
   user          User?       @relation("ApprovedBy", fields: [approvedBy], references: [id])
   createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Payment {
@@ -729,7 +731,7 @@ model Payment {
   status    String?
   invoices  Invoice[]
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Invoice {
@@ -741,7 +743,7 @@ model Invoice {
   invoiceNumber String   @unique
   pdfUrl        String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model DeliveryLog {
@@ -754,7 +756,7 @@ model DeliveryLog {
   method        String?
   status        String?
   createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model AuthSession {
@@ -797,7 +799,7 @@ model Trainee {
   attendances        Attendance[]
   competencies       TraineeCompetency[]
   createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@unique([email, companyId])
   @@unique([employeeId, companyId])
@@ -818,29 +820,29 @@ model TraineeDocument {
   expiryDate DateTime?
   status     String    @default("valid")
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model Timesheet {
-  id           Int      @id @default(autoincrement())
+  id           Int         @id @default(autoincrement())
   companyId    Int
-  company      Company  @relation(fields: [companyId], references: [id])
+  company      Company     @relation(fields: [companyId], references: [id])
   userId       Int
-  user         User     @relation("TimesheetUser", fields: [userId], references: [id])
+  user         User        @relation("TimesheetUser", fields: [userId], references: [id])
   jobId        Int?
-  job          Job?     @relation(fields: [jobId], references: [id])
+  job          Job?        @relation(fields: [jobId], references: [id])
   date         DateTime
   startTime    DateTime
   endTime      DateTime
-  breakMinutes Int      @default(0)
+  breakMinutes Int         @default(0)
   description  String?
-  status       String   @default("draft")
+  status       String      @default("draft")
   approvedBy   Int?
-  approver    User?    @relation("TimesheetApprover", fields: [approvedBy], references: [id])
+  approver     User?       @relation("TimesheetApprover", fields: [approvedBy], references: [id])
   jobServiceId Int?
   jobService   JobService? @relation(fields: [jobServiceId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now())
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   @@index([companyId, status])
   @@index([jobId])
@@ -862,22 +864,22 @@ model CertificateVerification {
 }
 
 model Document {
-  id         Int      @id @default(autoincrement())
-  companyId  Int
-  company    Company  @relation(fields: [companyId], references: [id])
-  name       String
-  type       String
-  category   String?
-  url        String
-  size       Int?
-  mimeType   String?
-  entityType String?
-  entityId   Int?
+  id          Int        @id @default(autoincrement())
+  companyId   Int
+  company     Company    @relation(fields: [companyId], references: [id])
+  name        String
+  type        String
+  category    String?
+  url         String
+  size        Int?
+  mimeType    String?
+  entityType  String?
+  entityId    Int?
   equipmentId Int?
   equipment   Equipment? @relation(fields: [equipmentId], references: [id])
-  uploadedBy Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  uploadedBy  Int?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model InspectionReport {
@@ -902,17 +904,17 @@ model InspectionReport {
   generatedBy      Int?
   generator        User?                       @relation("ReportGeneratedBy", fields: [generatedBy], references: [id])
   reviewedBy       Int?
-  reviewer        User?               @relation("ReportReviewedBy", fields: [reviewedBy], references: [id])
-  approvedBy      Int?
-  approver        User?               @relation("ReportApprovedBy", fields: [approvedBy], references: [id])
-  signedAt        DateTime?
-  signedBy        Int?
-  signer          User?               @relation("ReportSignedBy", fields: [signedBy], references: [id])
-  signatureData   Json?
-  jobServiceId    Int?
-  jobService      JobService?         @relation(fields: [jobServiceId], references: [id])
+  reviewer         User?                       @relation("ReportReviewedBy", fields: [reviewedBy], references: [id])
+  approvedBy       Int?
+  approver         User?                       @relation("ReportApprovedBy", fields: [approvedBy], references: [id])
+  signedAt         DateTime?
+  signedBy         Int?
+  signer           User?                       @relation("ReportSignedBy", fields: [signedBy], references: [id])
+  signatureData    Json?
+  jobServiceId     Int?
+  jobService       JobService?                 @relation(fields: [jobServiceId], references: [id])
   createdAt        DateTime                    @default(now())
-  updatedAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
   signatures       InspectionReportSignature[]
   failureWorkflows FailureWorkflow[]
 
@@ -934,7 +936,7 @@ model InspectionReportTemplate {
   createdBy   Int?
   creator     User?              @relation("TemplateCreatedBy", fields: [createdBy], references: [id])
   createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   reports     InspectionReport[]
 
   @@index([companyId, type])
@@ -982,7 +984,7 @@ model FailureWorkflow {
   resolvedBy       Int?
   resolver         User?                 @relation("FailureWorkflowResolvedBy", fields: [resolvedBy], references: [id])
   createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
   steps            FailureWorkflowStep[]
 
   @@index([companyId, jobId])
@@ -1007,7 +1009,7 @@ model FailureWorkflowStep {
   completer   User?           @relation("FailureStepCompletedBy", fields: [completedBy], references: [id])
   notes       String?
   createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@unique([workflowId, stepNumber])
   @@index([workflowId])
@@ -1033,39 +1035,39 @@ model Location {
   inspections            Inspection[]
   equipment              Equipment[]
   createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 
   @@unique([code, companyId])
   @@index([companyId, status])
 }
 
 model Equipment {
-  id              Int               @id @default(autoincrement())
-  companyId       Int
-  company         Company           @relation(fields: [companyId], references: [id])
-  customerId      Int
-  customer        Customer          @relation(fields: [customerId], references: [id])
-  code            String
-  name            String
-  category        String            // FORKLIFT, CRANE, EXCAVATOR, etc.
-  type            String?           // Specific model/type
-  make            String?
-  model           String?
-  serialNumber    String?
+  id                 Int                @id @default(autoincrement())
+  companyId          Int
+  company            Company            @relation(fields: [companyId], references: [id])
+  customerId         Int
+  customer           Customer           @relation(fields: [customerId], references: [id])
+  code               String
+  name               String
+  category           String // FORKLIFT, CRANE, EXCAVATOR, etc.
+  type               String? // Specific model/type
+  make               String?
+  model              String?
+  serialNumber       String?
   registrationNumber String?
-  specifications  Json?
-  hireType        String            @default("OWNED") // OWNED, HIRED, THIRD_PARTY
-  status          String            @default("ACTIVE") // ACTIVE, INACTIVE, RETIRED
-  locationId      Int?
-  location        Location?         @relation(fields: [locationId], references: [id])
-  normalChecklistId Int?
-  normalChecklist  ChecklistTemplate? @relation("EquipmentNormalChecklist", fields: [normalChecklistId], references: [id])
-  fullChecklistId   Int?
-  fullChecklist     ChecklistTemplate? @relation("EquipmentFullChecklist", fields: [fullChecklistId], references: [id])
-  documents       Document[]
-  inspections     Inspection[]
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  specifications     Json?
+  hireType           String             @default("OWNED") // OWNED, HIRED, THIRD_PARTY
+  status             String             @default("ACTIVE") // ACTIVE, INACTIVE, RETIRED
+  locationId         Int?
+  location           Location?          @relation(fields: [locationId], references: [id])
+  normalChecklistId  Int?
+  normalChecklist    ChecklistTemplate? @relation("EquipmentNormalChecklist", fields: [normalChecklistId], references: [id])
+  fullChecklistId    Int?
+  fullChecklist      ChecklistTemplate? @relation("EquipmentFullChecklist", fields: [fullChecklistId], references: [id])
+  documents          Document[]
+  inspections        Inspection[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   @@unique([code, companyId])
   @@unique([serialNumber, companyId])
@@ -1088,7 +1090,7 @@ model AccreditationAuthority {
   trainingSessions       TrainingSession[]
   certificates           Certificate[]
   createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 
   @@unique([code, companyId])
   @@index([companyId, status])
@@ -1108,7 +1110,7 @@ model LocationAccreditation {
   reference       String?
   notes           String?
   createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
 
   @@unique([locationId, accreditationId])
   @@index([companyId, status])
@@ -1126,7 +1128,7 @@ model CourseLocation {
   effectiveFrom DateTime?
   effectiveTo   DateTime?
   createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@unique([courseId, locationId])
   @@index([companyId, status])
@@ -1148,7 +1150,7 @@ model CourseAccreditation {
   effectiveTo     DateTime?
   notes           String?
   createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
 
   @@unique([courseId, locationId, accreditationId])
   @@index([companyId, approvalStatus])
@@ -1167,7 +1169,7 @@ model SessionEnrollment {
   attendedAt  DateTime?
   completedAt DateTime?
   createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   attendances Attendance[]
 
   @@unique([sessionId, traineeId])
@@ -1195,7 +1197,7 @@ model Attendance {
   isOffline    Boolean            @default(false)
   syncedAt     DateTime?
   createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
   @@unique([sessionId, traineeId])
   @@index([companyId, status])
@@ -1215,7 +1217,7 @@ model Competency {
   validityMonths Int? // validity period in months
   status         String              @default("ACTIVE")
   createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   traineeComps   TraineeCompetency[]
   courseComps    CourseCompetency[]
 
@@ -1239,7 +1241,7 @@ model TraineeCompetency {
   evidence     String?
   notes        String?
   createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@unique([traineeId, competencyId])
   @@index([companyId, status])
@@ -1257,7 +1259,7 @@ model CourseCompetency {
   competency   Competency     @relation(fields: [competencyId], references: [id])
   isRequired   Boolean        @default(true)
   createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@unique([courseId, competencyId])
   @@index([companyId])
@@ -1274,7 +1276,7 @@ model Trainer {
   certifications  String[]
   status          String            @default("ACTIVE")
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   sessions        TrainingSession[]
 
   @@unique([userId, companyId])
@@ -1292,7 +1294,7 @@ model Assessor {
   certifications String[]
   status         String            @default("ACTIVE")
   createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   sessions       TrainingSession[]
 
   @@unique([userId, companyId])
@@ -1316,7 +1318,7 @@ model Notification {
   actionUrl  String?
   metadata   Json?
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([companyId, userId, isRead])
   @@index([companyId, type])
@@ -1324,25 +1326,25 @@ model Notification {
 }
 
 model SyncQueue {
-  id          Int       @id @default(autoincrement())
-  companyId   Int
-  company     Company   @relation(fields: [companyId], references: [id])
-  userId      Int
-  user        User      @relation(fields: [userId], references: [id])
-  entityType  String // Trainee, TrainingSession, Attendance, Assessment, Inspection, Certificate, etc.
-  entityId    Int?
-  operation   String // CREATE, UPDATE, DELETE
-  payload     Json
-  idempotencyKey String? @unique
+  id                  Int       @id @default(autoincrement())
+  companyId           Int
+  company             Company   @relation(fields: [companyId], references: [id])
+  userId              Int
+  user                User      @relation(fields: [userId], references: [id])
+  entityType          String // Trainee, TrainingSession, Attendance, Assessment, Inspection, Certificate, etc.
+  entityId            Int?
+  operation           String // CREATE, UPDATE, DELETE
+  payload             Json
+  idempotencyKey      String?   @unique
   dependsOnEntityType String?
-  dependsOnEntityId Int?
-  status      String    @default("PENDING") // PENDING, SYNCING, SYNCED, FAILED, CONFLICT
-  retryCount  Int       @default(0)
-  lastError   String?
-  lastAttempt DateTime?
-  syncedAt    DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now())
+  dependsOnEntityId   Int?
+  status              String    @default("PENDING") // PENDING, SYNCING, SYNCED, FAILED, CONFLICT
+  retryCount          Int       @default(0)
+  lastError           String?
+  lastAttempt         DateTime?
+  syncedAt            DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@index([companyId, status])
   @@index([companyId, userId, status])
@@ -1409,11 +1411,11 @@ model CustomerSite {
 }
 
 model CustomerAsset {
-  id                 Int          @id @default(autoincrement())
+  id                 Int           @id @default(autoincrement())
   companyId          Int
-  company            Company      @relation(fields: [companyId], references: [id])
+  company            Company       @relation(fields: [companyId], references: [id])
   customerId         Int
-  customer           Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer           Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   siteId             Int?
   site               CustomerSite? @relation(fields: [siteId], references: [id])
   assetType          String
@@ -1423,10 +1425,10 @@ model CustomerAsset {
   registrationNumber String?
   capacity           String?
   yearOfManufacture  Int?
-  status             String       @default("active")
+  status             String        @default("active")
   inspections        Inspection[]
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   @@index([companyId, customerId])
   @@index([serialNumber])

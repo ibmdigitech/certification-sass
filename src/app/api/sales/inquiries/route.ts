@@ -1,17 +1,16 @@
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const { searchParams } = new URL(request.url);
-    const companyId = session?.user?.companyId ?? Number(searchParams.get('companyId') || '1');
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
 
-    const inquiries = await (prisma as any).salesInquiry.findMany({
+    const inquiries = await prisma.salesInquiry.findMany({
       where: { companyId },
       include: {
         customer: { select: { id: true, name: true, contact: true } },
@@ -31,15 +30,29 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const body = await request.json();
-    const companyId = session?.user?.companyId ?? body.companyId ?? 1;
 
     const { customerId, salesPersonId, subject, scope, source } = body;
 
-    const count = await (prisma as any).salesInquiry.count({ where: { companyId } });
+    if (!customerId) {
+      return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
+    }
+
+    const customer = await prisma.customer.findFirst({
+      where: { id: Number(customerId), companyId },
+    });
+    if (!customer) {
+      return NextResponse.json({ error: 'Customer not found or not accessible' }, { status: 404 });
+    }
+
+    const count = await prisma.salesInquiry.count({ where: { companyId } });
     const inquiryNumber = `INQ-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
-    const newInquiry = await (prisma as any).salesInquiry.create({
+    const newInquiry = await prisma.salesInquiry.create({
       data: {
         companyId,
         inquiryNumber,

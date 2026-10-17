@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { InspectionReportService } from '@/lib/services';
 
 export async function PATCH(
@@ -6,13 +8,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; stepId: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { stepId } = await params;
     const body = await request.json();
-    const { companyId, status, completedBy, notes } = body;
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'Missing companyId' }, { status: 400 });
-    }
+    const { status, completedBy, notes } = body;
 
     let step;
     if (status === 'completed' && completedBy) {

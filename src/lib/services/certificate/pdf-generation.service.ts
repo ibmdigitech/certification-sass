@@ -1,9 +1,7 @@
-import PDFDocument from 'pdfkit';
-import { PrismaClient } from '@prisma/client';
+﻿import PDFDocument from 'pdfkit';
+import { prisma } from '@/lib/prisma';
 import { QRCodeService } from './qr-code.service';
 import { Readable } from 'stream';
-
-const prisma = new PrismaClient();
 
 export interface CertificateTemplate {
   id: string;
@@ -366,3 +364,5 @@ export class PDFGenerationService {
 }
 
 export default PDFGenerationService;
+
+

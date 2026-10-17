@@ -1,12 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import { CertificateService } from '../certificate.service';
 import { QRCodeService } from './qr-code.service';
 import { PDFGenerationService } from './pdf-generation.service';
 import { DigitalSignatureService } from './digital-signature.service';
 import { VerificationService } from './verification.service';
 import { BulkCertificateService } from './bulk-certificate.service';
-
-const prisma = new PrismaClient();
 
 export interface CompleteCertificateData {
   companyId: number;
@@ -120,6 +118,7 @@ export class CertificateManager {
   static async issueCertificate(certificateId: number, companyId: number, performedBy: string): Promise<void> {
     await BulkCertificateService.performLifecycleAction({
       certificateId,
+      companyId,
       action: 'issue',
       performedBy,
       reason: 'Certificate issued',
@@ -129,6 +128,7 @@ export class CertificateManager {
   static async revokeCertificate(certificateId: number, companyId: number, performedBy: string, reason: string): Promise<void> {
     await BulkCertificateService.performLifecycleAction({
       certificateId,
+      companyId,
       action: 'revoke',
       performedBy,
       reason,
@@ -138,6 +138,7 @@ export class CertificateManager {
   static async renewCertificate(certificateId: number, companyId: number, performedBy: string, newExpiryDate: Date): Promise<void> {
     await BulkCertificateService.performLifecycleAction({
       certificateId,
+      companyId,
       action: 'renew',
       performedBy,
       reason: 'Certificate renewed',
@@ -148,6 +149,7 @@ export class CertificateManager {
   static async reissueCertificate(certificateId: number, companyId: number, performedBy: string, reason: string): Promise<void> {
     await BulkCertificateService.performLifecycleAction({
       certificateId,
+      companyId,
       action: 'reissue',
       performedBy,
       reason,
@@ -157,6 +159,7 @@ export class CertificateManager {
   static async archiveCertificate(certificateId: number, companyId: number, performedBy: string): Promise<void> {
     await BulkCertificateService.performLifecycleAction({
       certificateId,
+      companyId,
       action: 'archive',
       performedBy,
       reason: 'Certificate archived',
@@ -284,3 +287,5 @@ if (format === 'csv') {
 }
 
 export default CertificateManager;
+
+

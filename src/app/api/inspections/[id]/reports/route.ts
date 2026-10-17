@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { InspectionReportService } from '@/lib/services';
 
 export async function GET(
@@ -45,9 +46,6 @@ export async function POST(
     }
 
     // Get inspection to find jobId
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    
     const inspection = await prisma.inspection.findFirst({
       where: { id: inspectionId, companyId },
     });

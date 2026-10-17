@@ -1,9 +1,10 @@
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
-const prisma = new PrismaClient();
+type CustomerWhereInput = Prisma.CustomerWhereInput;
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, Number(searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || '50')));
 
-    const whereClause: any = { companyId };
+    const whereClause: CustomerWhereInput = { companyId };
     if (status && status !== 'all') {
       whereClause.status = status;
     }
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [customers, total] = await Promise.all([
-      (prisma.customer as any).findMany({
+      prisma.customer.findMany({
         where: whereClause,
         include: {
           sites: { select: { id: true, name: true, emirate: true } },
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
       }),
-      (prisma.customer as any).count({ where: whereClause }),
+      prisma.customer.count({ where: whereClause }),
     ]);
 
     return NextResponse.json({
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     const customerName = (name || contact || '').toString().trim();
 
     // Duplicate detection: same company must not have an active customer with the same name, code, email, or TRN
-    const existing = await (prisma.customer as any).findFirst({
+    const existing = await prisma.customer.findFirst({
       where: {
         companyId,
         OR: [
@@ -92,8 +93,8 @@ export async function POST(request: NextRequest) {
           code ? { code: { equals: code, mode: 'insensitive' } } : undefined,
           email ? { email: { equals: email, mode: 'insensitive' } } : undefined,
           trnNumber ? { trnNumber: { equals: trnNumber, mode: 'insensitive' } } : undefined,
-        ].filter(Boolean) as any[],
-      },
+        ].filter(Boolean) as Prisma.CustomerWhereInput['OR'],
+      } as CustomerWhereInput,
       select: { id: true, name: true, code: true, status: true },
     });
 
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newCustomer = await (prisma.customer as any).create({
+    const newCustomer = await prisma.customer.create({
       data: {
         companyId,
         name: customerName,
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
         entityType: 'Customer',
         entityId: newCustomer.id,
         tenantId: companyId,
-        newValue: { name: newCustomer.name, code: newCustomer.code } as any,
+        newValue: { name: newCustomer.name, code: newCustomer.code } as Prisma.InputJsonValue,
       },
     });
 
@@ -167,7 +168,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Customer id is required' }, { status: 400 });
     }
 
-    const existing = await (prisma.customer as any).findFirst({
+    const existing = await prisma.customer.findFirst({
       where: { id: Number(id), companyId },
       select: { id: true },
     });
@@ -175,8 +176,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
-    const updated = await (prisma.customer as any).update({
-      where: { id: Number(id) },
+    const updated = await prisma.customer.update({
+      where: { id: Number(id), companyId },
       data: {
         name: data.name,
         code: data.code,
@@ -202,7 +203,7 @@ export async function PATCH(request: NextRequest) {
         entityType: 'Customer',
         entityId: updated.id,
         tenantId: companyId,
-        newValue: { name: updated.name, code: updated.code, status: updated.status } as any,
+        newValue: { name: updated.name, code: updated.code, status: updated.status } as Prisma.InputJsonValue,
       },
     });
 

@@ -1,7 +1,5 @@
-import PDFDocument from 'pdfkit';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import PDFDocument from 'pdfkit';
+import { prisma } from '@/lib/prisma';
 
 export interface InspectionReportPDFData {
   reportNumber: string;
@@ -254,7 +252,7 @@ export class InspectionReportPDFGenerator {
         doc.fontSize(9).font('Helvetica-Bold').text('Evidence:', 70, doc.y);
         doc.moveDown(0.2);
         finding.evidence.forEach((evidence: string) => {
-          doc.fontSize(8).font('Helvetica').text(`• ${evidence}`, 90, doc.y, { width: doc.page.width - 160 });
+          doc.fontSize(8).font('Helvetica').text(`â€¢ ${evidence}`, 90, doc.y, { width: doc.page.width - 160 });
         });
         doc.moveDown(0.3);
       }
@@ -378,3 +376,5 @@ export class InspectionReportPDFGenerator {
     return storagePath;
   }
 }
+
+

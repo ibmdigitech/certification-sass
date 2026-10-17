@@ -1,7 +1,5 @@
-import { PrismaClient, Trainee, TraineeDocument, TrainingSession, Training } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
+import { prisma } from '@/lib/prisma';
+﻿import { Trainee, TraineeDocument, TrainingSession, Training } from '@prisma/client';
 export type TraineeWithRelations = Trainee & {
   documents: TraineeDocument[];
   trainingSessions: (TrainingSession & {
@@ -204,3 +202,4 @@ export class TraineeService {
 }
 
 export const traineeService = new TraineeService();
+

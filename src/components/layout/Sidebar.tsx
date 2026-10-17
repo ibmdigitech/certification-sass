@@ -269,24 +269,23 @@ export function Sidebar() {
             {group.items.map((item) => {
               const active = isItemActive(item.href);
               return (
-                <Link key={item.name} href={item.href} className="w-full block">
-                  <button
-                    type="button"
-                    className={cn(
-                      "w-full justify-start gap-2.5 px-2.5 py-1 text-xs h-8 inline-flex items-center rounded-md transition-colors cursor-pointer",
-                      active
-                        ? "bg-primary/15 font-semibold text-primary shadow-xs"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
-                    )}
-                  >
-                    <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", active ? "text-primary" : "text-muted-foreground")} />
-                    <span className="flex-1 truncate text-left">{item.name}</span>
-                    {item.badge && (
-                      <Badge variant="outline" className="text-[10px] py-0 px-1 bg-background">
-                        {item.badge}
-                      </Badge>
-                    )}
-                  </button>
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "w-full justify-start gap-2.5 px-2.5 py-1 text-xs h-8 inline-flex items-center rounded-md transition-colors cursor-pointer",
+                    active
+                      ? "bg-primary/15 font-semibold text-primary shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                  )}
+                >
+                  <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                  <span className="flex-1 truncate text-left">{item.name}</span>
+                  {item.badge && (
+                    <Badge variant="outline" className="text-[10px] py-0 px-1 bg-background">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </Link>
               );
             })}
@@ -304,19 +303,18 @@ export function Sidebar() {
       {workspaceItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
         return (
-          <Link key={item.name} href={item.href} className="w-full block">
-            <button
-              type="button"
-              className={cn(
-                "w-full justify-start gap-2.5 px-2.5 py-1 text-xs h-8 inline-flex items-center rounded-md transition-colors cursor-pointer",
-                isActive
-                  ? "bg-primary/15 font-semibold text-primary shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
-              )}
-            >
-              <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-              <span className="flex-1 truncate text-left">{item.name}</span>
-            </button>
+          <Link
+            key={item.name}
+            href={item.href}
+            className={cn(
+              "w-full justify-start gap-2.5 px-2.5 py-1 text-xs h-8 inline-flex items-center rounded-md transition-colors cursor-pointer",
+              isActive
+                ? "bg-primary/15 font-semibold text-primary shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+            )}
+          >
+            <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+            <span className="flex-1 truncate text-left">{item.name}</span>
           </Link>
         );
       })}

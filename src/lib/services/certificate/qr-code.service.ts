@@ -1,7 +1,5 @@
-import QRCode from 'qrcode';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import QRCode from 'qrcode';
+import { prisma } from '@/lib/prisma';
 
 export interface QRCodeOptions {
   certificateId: number;
@@ -133,3 +131,5 @@ export class QRCodeService {
 }
 
 export default QRCodeService;
+
+

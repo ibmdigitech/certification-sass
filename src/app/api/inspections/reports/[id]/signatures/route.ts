@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { InspectionReportService } from '@/lib/services';
 
 export async function GET(
@@ -6,9 +8,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '1');
     const reportId = parseInt(id);
 
     const signatures = await InspectionReportService.getSignatures(reportId, companyId);
@@ -25,19 +30,25 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
+    const userId = session.user.id;
     const { id } = await params;
     const body = await request.json();
-    const { companyId, userId, role, signatureData, ipAddress, userAgent } = body;
+    const { role, signatureData, ipAddress, userAgent } = body;
     const reportId = parseInt(id);
 
-    if (!companyId || !userId || !role || !signatureData) {
+    if (!role || !signatureData) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const signature = await InspectionReportService.addSignature({
       companyId,
       reportId,
-      userId,
+      userId: Number(userId),
       role,
       signatureData,
       ipAddress,

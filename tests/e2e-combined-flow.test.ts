@@ -141,7 +141,7 @@ describe('End-to-End Combined Commercial & Operational Flow (Sections 4 & 5)', (
 
   test('should create Quotation and convert to Job with both Inspection and Training services', async () => {
     // 1. Create Quotation with 2 line items
-    quotation = await (prisma as any).salesQuotation.create({
+    quotation = await prisma.salesQuotation.create({
       data: {
         companyId: company.id,
         quotationNumber: uniqueString('QT-ABC-01'),

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { CertificateManager } from '@/lib/services/certificate/certificate-manager';
 import { CertificateService } from '@/lib/services/certificate.service';
 import { PDFGenerationService } from '@/lib/services/certificate/pdf-generation.service';
@@ -12,9 +14,18 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const companyId = 1; // Default company for testing
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { id } = await params;
     const certificateId = parseInt(id);
+
+    if (isNaN(certificateId)) {
+      return NextResponse.json({ error: 'Invalid certificate ID' }, { status: 400 });
+    }
+
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
 
     const result = await CertificateManager.getCertificateWithDetails(certificateId, companyId, baseUrl);
@@ -26,7 +37,7 @@ export async function GET(
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching certificate:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -35,11 +46,20 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const companyId = 1; // Default company for testing
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
+    const performedBy = session.user.name || session.user.email || 'System';
     const { id } = await params;
     const certificateId = parseInt(id);
     const body = await request.json();
     const { action, reason, newExpiryDate } = body;
+
+    if (isNaN(certificateId)) {
+      return NextResponse.json({ error: 'Invalid certificate ID' }, { status: 400 });
+    }
 
     const validActions = ['issue', 'revoke', 'expire', 'renew', 'reissue', 'archive'];
     if (!action || !validActions.includes(action)) {
@@ -48,9 +68,10 @@ export async function PUT(
 
     const result = await BulkCertificateService.performLifecycleAction({
       certificateId,
+      companyId,
       action,
       reason,
-      performedBy: 'System',
+      performedBy,
       newExpiryDate: newExpiryDate ? new Date(newExpiryDate) : undefined,
     });
 
@@ -66,14 +87,24 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const companyId = 1; // Default company for testing
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
+    const performedBy = session.user.name || session.user.email || 'System';
     const { id } = await params;
     const certificateId = parseInt(id);
 
+    if (isNaN(certificateId)) {
+      return NextResponse.json({ error: 'Invalid certificate ID' }, { status: 400 });
+    }
+
     await BulkCertificateService.performLifecycleAction({
       certificateId,
+      companyId,
       action: 'archive',
-      performedBy: 'System',
+      performedBy,
       reason: 'Certificate deleted via API',
     });
 

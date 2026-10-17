@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import { CertificateNumberService } from './certificate-number.service';
-
-const prisma = new PrismaClient();
 
 export interface CreateCertificateInput {
   companyId: number;
@@ -154,3 +152,5 @@ export class CertificateService {
     });
   }
 }
+
+

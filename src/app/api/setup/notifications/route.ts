@@ -1,10 +1,7 @@
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
 const DEFAULT_NOTIFICATIONS = [
   {
     eventCode: 'JOB_COMPLETED',
@@ -56,24 +53,26 @@ const DEFAULT_NOTIFICATIONS = [
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const { searchParams } = new URL(request.url);
-    const companyId = session?.user?.companyId ?? Number(searchParams.get('companyId') || '1');
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
 
-    let settings = await (prisma as any).notificationSetting.findMany({
+    let settings = await prisma.notificationSetting.findMany({
       where: { companyId },
       orderBy: { createdAt: 'asc' },
     });
 
     if (settings.length === 0) {
       for (const item of DEFAULT_NOTIFICATIONS) {
-        await (prisma as any).notificationSetting.create({
+        await prisma.notificationSetting.create({
           data: {
             companyId,
             ...item,
           },
         });
       }
-      settings = await (prisma as any).notificationSetting.findMany({
+      settings = await prisma.notificationSetting.findMany({
         where: { companyId },
         orderBy: { createdAt: 'asc' },
       });

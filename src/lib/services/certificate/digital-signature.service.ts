@@ -1,8 +1,6 @@
-import * as forge from 'node-forge';
-import { PrismaClient } from '@prisma/client';
+﻿import * as forge from 'node-forge';
+import { prisma } from '@/lib/prisma';
 import * as crypto from 'crypto';
-
-const prisma = new PrismaClient();
 
 export interface KeyPair {
   privateKey: string;
@@ -316,3 +314,5 @@ export class DigitalSignatureService {
 }
 
 export default DigitalSignatureService;
+
+

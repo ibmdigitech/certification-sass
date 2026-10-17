@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import { PDFGenerationService } from './certificate/pdf-generation.service';
 import { TimesheetPDFService } from './timesheet-pdf.service';
-
-const prisma = new PrismaClient();
 
 export interface JobPackageManifest {
   jobNumber: string;
@@ -25,11 +23,11 @@ export class JobPackageService {
    * Generates a complete job package for download / print.
    * Structure:
    *   TSC-2563741_JOB_PACKAGE.zip
-   *     ├── CERTIFICATE.pdf
-   *     ├── TIMESHEET.pdf
-   *     ├── INSPECTION_REPORT.pdf
-   *     ├── TRAINING_RECORD.pdf
-   *     └── SUPPORTING_DOCUMENTS/
+   *     â”œâ”€â”€ CERTIFICATE.pdf
+   *     â”œâ”€â”€ TIMESHEET.pdf
+   *     â”œâ”€â”€ INSPECTION_REPORT.pdf
+   *     â”œâ”€â”€ TRAINING_RECORD.pdf
+   *     â””â”€â”€ SUPPORTING_DOCUMENTS/
    *
    * Sensitive identity documents are excluded by default unless
    * includeSensitiveDocuments is true.
@@ -108,7 +106,7 @@ export class JobPackageService {
       }
     }
 
-    // 3. Inspection Reports (reference only — full PDF generation delegated to InspectionReportPDFService)
+    // 3. Inspection Reports (reference only â€” full PDF generation delegated to InspectionReportPDFService)
     if (includeInspectionReports && job.inspectionReports.length > 0) {
       for (const report of job.inspectionReports) {
         if (report.pdfUrl) {
@@ -157,3 +155,5 @@ export class JobPackageService {
     return `${jobNumber}_JOB_PACKAGE.zip`;
   }
 }
+
+

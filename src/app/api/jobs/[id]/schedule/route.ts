@@ -1,12 +1,10 @@
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 
 type JobServiceType = 'TRAINING' | 'INSPECTION';
-
-const prisma = new PrismaClient();
 
 interface SchedulePayload {
   serviceType: 'TRAINING' | 'INSPECTION';

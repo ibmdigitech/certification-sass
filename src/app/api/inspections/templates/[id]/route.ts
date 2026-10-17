@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { InspectionReportService } from '@/lib/services';
 
 export async function GET(
@@ -6,9 +8,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '1');
     const templateId = parseInt(id);
 
     const template = await InspectionReportService.getTemplateById(templateId, companyId);
@@ -29,14 +34,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { id } = await params;
     const body = await request.json();
-    const { companyId, ...updateData } = body;
+    const { ...updateData } = body;
     const templateId = parseInt(id);
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'Missing companyId' }, { status: 400 });
-    }
 
     const template = await InspectionReportService.updateTemplate(templateId, companyId, updateData);
 
@@ -52,9 +58,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '1');
     const templateId = parseInt(id);
 
     await InspectionReportService.deleteTemplate(templateId, companyId);

@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 export interface CreateCompetencyInput {
   companyId: number;
@@ -240,3 +238,4 @@ export class CourseCompetencyService {
 export const competencyService = CompetencyService;
 export const traineeCompetencyService = TraineeCompetencyService;
 export const courseCompetencyService = CourseCompetencyService;
+

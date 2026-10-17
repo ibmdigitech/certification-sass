@@ -92,7 +92,7 @@ interface Template {
   creator?: { name: string };
 }
 
-const COMPANY_ID = 1;
+const COMPANY_ID = 1; // TODO: Remove hardcoded company ID - API routes now use session-based auth
 
 export default function InspectionsPage() {
   const [reports, setReports] = useState<Report[]>([]);

@@ -37,10 +37,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-"exclude": [
+  "exclude": [
     "node_modules",
     "prisma/seed.ts",
-    "src/app/api/customers/route.ts",
     "src/components/documents/DocumentCapture.test.tsx"
   ]
 }

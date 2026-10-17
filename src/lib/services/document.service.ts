@@ -1,7 +1,6 @@
-import { PrismaClient, Document, AuditLog } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
+import type { Document, AuditLog } from '@prisma/client';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
 
 export interface UploadDocumentInput {
   companyId: number;
@@ -171,3 +170,6 @@ export class DocumentService {
     });
   }
 }
+
+
+

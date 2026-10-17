@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import { prisma } from '@/lib/prisma';
 
 export class PermissionService {
   static async checkUserPermission(userId: number, resource: string, action: string) {
@@ -76,3 +74,4 @@ export class PermissionService {
 }
 
 export default PermissionService;
+

@@ -1,8 +1,7 @@
-import { PrismaClient, JobServiceType } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
+import type { JobServiceType } from '@prisma/client';
 import { JobNumberService } from './job-number.service';
 import { validateLocationAccreditation } from '@/lib/validation/location-accreditation';
-
-const prisma = new PrismaClient();
 
 export interface JobServiceLineInput {
   serviceType: 'TRAINING' | 'INSPECTION';
@@ -555,7 +554,7 @@ export class JobService {
     });
   }
 
-  // ── Status transition state machine ─────────────────────────────
+  // â”€â”€ Status transition state machine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Defines which status transitions are permitted and the roles allowed
   // to perform each action. Prevents invalid lifecycle jumps.
   private static readonly TRANSITIONS: Record<string, string[]> = {
@@ -639,7 +638,7 @@ export class JobService {
             data: { scheduledDate: new Date(payload.scheduledDate), status: current === 'NEW' || current === 'PENDING' ? 'SCHEDULED' : undefined },
           });
           // Record an auditable reschedule entry
-          await (tx as any).reschedule.create({
+          await tx.reschedule.create({
             data: {
               companyId,
               jobId,
@@ -754,3 +753,6 @@ export class JobService {
     });
   }
 }
+
+
+

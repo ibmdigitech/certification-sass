@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { VerificationService } from '@/lib/services/certificate/verification.service';
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
+    const verifiedBy = session.user.name || session.user.email || 'System';
+
     const body = await request.json();
     const { certificateNumber, method = 'api', notes } = body;
 
@@ -10,10 +19,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Certificate number is required' }, { status: 400 });
     }
 
-    const verifiedBy = 'API User';
-
     const result = await VerificationService.verifyCertificate({
       certificateNumber,
+      companyId,
       verifiedBy,
       method,
       notes,
@@ -28,7 +36,11 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const companyId = 1; // Default company for testing
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { searchParams } = new URL(request.url);
     const certificateId = searchParams.get('certificateId') ? parseInt(searchParams.get('certificateId')!) : undefined;
     const startDate = searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined;

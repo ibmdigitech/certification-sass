@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import { prisma } from '@/lib/prisma';
 
 export interface ExtractedDocumentData {
   documentType: 'EMIRATES_ID' | 'PASSPORT' | 'VISA' | 'LICENSE' | 'UNKNOWN';
@@ -82,3 +80,5 @@ export class DocumentExtractionService {
     return extractedData;
   }
 }
+
+

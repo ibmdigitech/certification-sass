@@ -1,10 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import { CertificateService } from '../certificate.service';
 import { PDFGenerationService } from './pdf-generation.service';
 import { QRCodeService } from './qr-code.service';
 import { DigitalSignatureService } from './digital-signature.service';
-
-const prisma = new PrismaClient();
 
 export interface BulkCertificateRequest {
   companyId: number;
@@ -38,6 +36,7 @@ export interface BulkCertificateResult {
 
 export interface CertificateLifecycleAction {
   certificateId: number;
+  companyId: number;
   action: 'issue' | 'revoke' | 'expire' | 'renew' | 'reissue' | 'archive';
   reason?: string;
   performedBy: string;
@@ -353,3 +352,5 @@ export class BulkCertificateService {
 }
 
 export default BulkCertificateService;
+
+

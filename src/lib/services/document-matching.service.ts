@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import { ExtractedDocumentData } from './document-extraction.service';
-
-const prisma = new PrismaClient();
 
 export interface DocumentMatchContext {
   explicitJobNumber?: string;
@@ -181,3 +179,5 @@ export class DocumentMatchingService {
     };
   }
 }
+
+

@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import { prisma } from '@/lib/prisma';
 
 export interface AuditLogData {
   companyId: number;
@@ -90,3 +88,4 @@ export class AuditService {
 export const logAdminAction = AuditService.logEvent;
 
 export default AuditService;
+

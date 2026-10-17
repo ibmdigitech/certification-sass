@@ -1,6 +1,5 @@
-import { PrismaClient, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
 export class JobNumberService {
   private static readonly PREFIX = 'TSC-';
@@ -57,3 +56,6 @@ export class JobNumberService {
     return { prefix: match[1], number: parseInt(match[2], 10) };
   }
 }
+
+
+

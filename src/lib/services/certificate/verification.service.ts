@@ -1,11 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import { QRCodeService } from './qr-code.service';
 import { DigitalSignatureService } from './digital-signature.service';
 
-const prisma = new PrismaClient();
-
 export interface VerificationRequest {
   certificateNumber: string;
+  companyId?: number;
   verifiedBy: string;
   method: 'qr' | 'manual' | 'api' | 'bulk';
   ipAddress?: string;
@@ -54,10 +53,10 @@ export interface BulkVerificationResult {
 
 export class VerificationService {
   static async verifyCertificate(request: VerificationRequest): Promise<VerificationResult> {
-    const { certificateNumber, verifiedBy, method, ipAddress, userAgent, notes } = request;
+    const { certificateNumber, companyId, verifiedBy, method, ipAddress, userAgent, notes } = request;
 
     const certificate = await prisma.certificate.findFirst({
-      where: { number: certificateNumber },
+      where: { number: certificateNumber, ...(companyId ? { companyId } : {}) },
       include: {
         job: { include: { customer: true } },
         verifications: { orderBy: { verifiedAt: 'desc' }, take: 1 },
@@ -301,3 +300,5 @@ export class VerificationService {
 }
 
 export default VerificationService;
+
+

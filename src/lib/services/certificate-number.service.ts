@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 export class CertificateNumberService {
   static async generateCertificateNumber(jobId: number, companyId: number): Promise<{
@@ -102,3 +100,4 @@ export class CertificateNumberService {
     return !existing;
   }
 }
+

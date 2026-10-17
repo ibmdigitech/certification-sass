@@ -1,6 +1,5 @@
-import { PrismaClient, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
 export interface CreateInspectionReportInput {
   companyId: number;
@@ -616,3 +615,6 @@ export class InspectionReportService {
     });
   }
 }
+
+
+

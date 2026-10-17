@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import { prisma } from '@/lib/prisma';
 
 export class AdminSystemService {
   static async getSystemStats(filters: {
@@ -55,3 +53,4 @@ export class AdminSystemService {
 }
 
 export default AdminSystemService;
+

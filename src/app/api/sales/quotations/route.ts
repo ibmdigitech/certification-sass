@@ -1,17 +1,17 @@
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, JobServiceType } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
+import { JobServiceType } from '@prisma/client';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const { searchParams } = new URL(request.url);
-    const companyId = session?.user?.companyId ?? Number(searchParams.get('companyId') || '1');
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
 
-    const quotations = await (prisma as any).salesQuotation.findMany({
+    const quotations = await prisma.salesQuotation.findMany({
       where: { companyId },
       include: {
         customer: { select: { id: true, name: true, contact: true } },
@@ -32,16 +32,29 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const body = await request.json();
-    const companyId = session?.user?.companyId ?? body.companyId ?? 1;
 
     const { inquiryId, customerId, salesPersonId, title, items, action, quotationId } = body;
+
+    // Validate customer belongs to the authenticated tenant
+    if (customerId) {
+      const customer = await prisma.customer.findFirst({
+        where: { id: Number(customerId), companyId },
+      });
+      if (!customer) {
+        return NextResponse.json({ error: 'Customer not found or not accessible' }, { status: 404 });
+      }
+    }
 
     // Handle Quotation to Job conversion action
     if (action === 'convert_to_job' && quotationId) {
       const jobResult = await prisma.$transaction(async (tx) => {
-        const q = await (tx as any).salesQuotation.findUnique({
-          where: { id: Number(quotationId) },
+        const q = await tx.salesQuotation.findUnique({
+          where: { id: Number(quotationId), companyId },
           include: { items: true, customer: { include: { sites: true } } },
         });
 
@@ -81,7 +94,7 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        await (tx as any).salesQuotation.update({
+        await tx.salesQuotation.update({
           where: { id: q.id },
           data: {
             convertedJobId: newJob.id,
@@ -96,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Otherwise create quotation
-    const count = await (prisma as any).salesQuotation.count({ where: { companyId } });
+    const count = await prisma.salesQuotation.count({ where: { companyId } });
     const quotationNumber = `QT-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
     let subtotal = 0;
@@ -115,7 +128,7 @@ export async function POST(request: NextRequest) {
     const taxAmount = subtotal * 0.05;
     const totalAmount = subtotal + taxAmount;
 
-    const newQuotation = await (prisma as any).salesQuotation.create({
+    const newQuotation = await prisma.salesQuotation.create({
       data: {
         companyId,
         quotationNumber,

@@ -1,7 +1,5 @@
-import { PrismaClient, TraineeDocument } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
+import { prisma } from '@/lib/prisma';
+﻿import { TraineeDocument } from '@prisma/client';
 export interface CreateTraineeDocumentInput {
   companyId: number;
   traineeId: number;
@@ -144,3 +142,4 @@ export class TraineeDocumentService {
 }
 
 export const traineeDocumentService = new TraineeDocumentService();
+

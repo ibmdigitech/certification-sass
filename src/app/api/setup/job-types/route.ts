@@ -1,10 +1,7 @@
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
 // Default seed list for UAE Inspection Standards if none exist in DB
 const DEFAULT_JOB_TYPES = [
   { code: 'TSC-EIAC-001', description: 'Working At Height Equipment', category: 'EIAC', standard: 'TSC-EIAC-SOP-001', checklistRef: 'TSC-EIAC-CHK-001', certRef: 'TSC-EIAC-REP-001', fee: 550 },
@@ -38,7 +35,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || 'EIAC';
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
-    let jobTypes = await (prisma as any).jobPerformingType.findMany({
+    let jobTypes = await prisma.jobPerformingType.findMany({
       where: { companyId, category, ...(includeInactive ? {} : { isActive: true }) },
       orderBy: { code: 'asc' },
     });
@@ -47,7 +44,7 @@ export async function GET(request: NextRequest) {
     if (jobTypes.length === 0 && !includeInactive) {
       const filteredDefaults = DEFAULT_JOB_TYPES.filter((d) => d.category === category);
       for (const item of filteredDefaults) {
-        await (prisma as any).jobPerformingType.create({
+        await prisma.jobPerformingType.create({
           data: {
             companyId,
             category: item.category,
@@ -61,7 +58,7 @@ export async function GET(request: NextRequest) {
           },
         });
       }
-      jobTypes = await (prisma as any).jobPerformingType.findMany({
+      jobTypes = await prisma.jobPerformingType.findMany({
         where: { companyId, category },
         orderBy: { code: 'asc' },
       });
@@ -91,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     // Duplicate code detection within company+category
     if (code) {
-      const dup = await (prisma as any).jobPerformingType.findFirst({
+      const dup = await prisma.jobPerformingType.findFirst({
         where: { companyId, code: { equals: code, mode: 'insensitive' } },
         select: { id: true, code: true },
       });
@@ -103,7 +100,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const newType = await (prisma as any).jobPerformingType.create({
+    const newType = await prisma.jobPerformingType.create({
       data: {
         companyId,
         category: category || 'EIAC',
@@ -152,7 +149,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Job type id is required' }, { status: 400 });
     }
 
-    const existing = await (prisma as any).jobPerformingType.findFirst({
+    const existing = await prisma.jobPerformingType.findFirst({
       where: { id: Number(id), companyId },
       select: { id: true, code: true },
     });
@@ -162,7 +159,7 @@ export async function PATCH(request: NextRequest) {
 
     // If code is being changed, ensure uniqueness
     if (data.code && data.code !== existing.code) {
-      const dup = await (prisma as any).jobPerformingType.findFirst({
+      const dup = await prisma.jobPerformingType.findFirst({
         where: { companyId, code: { equals: data.code, mode: 'insensitive' } },
         select: { id: true },
       });
@@ -174,7 +171,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const updated = await (prisma as any).jobPerformingType.update({
+    const updated = await prisma.jobPerformingType.update({
       where: { id: Number(id) },
       data: {
         code: data.code,

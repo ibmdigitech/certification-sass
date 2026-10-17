@@ -1,10 +1,7 @@
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -84,9 +81,9 @@ export async function GET(request: NextRequest) {
       prisma.job.count({ where: { companyId } }),
       prisma.deliveryLog.count({ where: { companyId } }),
       prisma.customer.count({ where: { companyId } }),
-      (prisma as any).salesInquiry?.count({ where: { companyId } }).catch(() => 0) ?? 0,
-      (prisma as any).salesQuotation?.count({ where: { companyId } }).catch(() => 0) ?? 0,
-      (prisma as any).salesQuotation?.count({ where: { companyId, status: 'APPROVED' } }).catch(() => 0) ?? 0,
+      prisma.salesInquiry?.count({ where: { companyId } }).catch(() => 0) ?? 0,
+      prisma.salesQuotation?.count({ where: { companyId } }).catch(() => 0) ?? 0,
+      prisma.salesQuotation?.count({ where: { companyId, status: 'APPROVED' } }).catch(() => 0) ?? 0,
       prisma.inspection.count({ where: { companyId, result: 'FAILED' } }).catch(() => 0),
       prisma.inspection.count({ where: { companyId, result: 'PASSED', Certificate: { none: {} } } }).catch(() => 0),
       prisma.inspection.count({ where: { companyId, approvalStatus: 'PENDING' } }).catch(() => 0),

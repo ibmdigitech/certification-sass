@@ -1,7 +1,8 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testMatch: ['**/tests/**/*.test.ts'],
+  testMatch: ['<rootDir>/tests/**/*.test.ts', '<rootDir>/__tests__/**/*.test.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '.kilo/worktrees', '.next'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

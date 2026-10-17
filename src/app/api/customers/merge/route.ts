@@ -1,10 +1,7 @@
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -26,12 +23,12 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const src = await (tx.customer as any).findUnique({
+      const src = await tx.customer.findUnique({
         where: { id: Number(sourceCustomerId) },
         include: { _count: { select: { sites: true, assets: true, jobs: true } } },
       });
 
-      const tgt = await (tx.customer as any).findUnique({
+      const tgt = await tx.customer.findUnique({
         where: { id: Number(targetCustomerId) },
       });
 
@@ -44,41 +41,41 @@ export async function POST(request: NextRequest) {
       }
 
       // Reassign sites
-      const sitesMoved = await (tx as any).customerSite.updateMany({
+      const sitesMoved = await tx.customerSite.updateMany({
         where: { customerId: src.id },
         data: { customerId: tgt.id },
       });
 
       // Reassign assets
-      const assetsMoved = await (tx as any).customerAsset.updateMany({
+      const assetsMoved = await tx.customerAsset.updateMany({
         where: { customerId: src.id },
         data: { customerId: tgt.id },
       });
 
       // Reassign jobs
-      const jobsMoved = await (tx.job as any).updateMany({
+      const jobsMoved = await tx.job.updateMany({
         where: { customerId: src.id },
         data: { customerId: tgt.id },
       });
 
       // Reassign inquiries
-      if ((tx as any).salesInquiry) {
-        await (tx as any).salesInquiry.updateMany({
+      if (tx.salesInquiry) {
+        await tx.salesInquiry.updateMany({
           where: { customerId: src.id },
           data: { customerId: tgt.id },
         });
       }
 
       // Reassign quotations
-      if ((tx as any).salesQuotation) {
-        await (tx as any).salesQuotation.updateMany({
+      if (tx.salesQuotation) {
+        await tx.salesQuotation.updateMany({
           where: { customerId: src.id },
           data: { customerId: tgt.id },
         });
       }
 
       // Archive source customer
-      await (tx.customer as any).update({
+      await tx.customer.update({
         where: { id: src.id },
         data: {
           status: 'merged_archived',

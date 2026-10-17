@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { InspectionReportService } from '@/lib/services';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '1');
     const type = searchParams.get('type') || undefined;
 
     const templates = await InspectionReportService.getTemplates(companyId, type);
@@ -18,10 +24,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const companyId = session.user.companyId;
     const body = await request.json();
-    const { companyId, name, description, type, content, isDefault, createdBy } = body;
+    const { name, description, type, content, isDefault, createdBy } = body;
 
-    if (!companyId || !name || !type || !content) {
+    if (!name || !type || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 

@@ -1,9 +1,7 @@
-import PDFDocument from 'pdfkit';
-import { PrismaClient } from '@prisma/client';
+﻿import PDFDocument from 'pdfkit';
+import { prisma } from '@/lib/prisma';
 import { TimesheetService } from './timesheet.service';
 import { Readable } from 'stream';
-
-const prisma = new PrismaClient();
 
 export interface TimesheetPDFData {
   jobNumber: string;
@@ -211,3 +209,5 @@ export class TimesheetPDFService {
     return `${jobNumber}_TIMESHEET.pdf`;
   }
 }
+
+
