@@ -5,6 +5,13 @@ export interface CreateEnrollmentInput {
   companyId: number;
   courseId: number;
   traineeId: number;
+  locationId?: number;
+  jobId?: number;
+  jobNumber?: string;
+  trainingDate?: string;
+  timesheetNumber?: string;
+  photoUrl?: string;
+  idUrl?: string;
 }
 
 export interface UpdateLessonProgressInput {
@@ -46,10 +53,22 @@ export class EnrollmentService {
         companyId: input.companyId,
         courseId: input.courseId,
         traineeId: input.traineeId,
+        locationId: input.locationId,
+        jobId: input.jobId,
+        jobNumber: input.jobNumber,
+        trainingDate: input.trainingDate ? new Date(input.trainingDate) : undefined,
+        timesheetNumber: input.timesheetNumber,
+        photoUrl: input.photoUrl,
+        idUrl: input.idUrl,
         status: 'active',
         enrolledAt: new Date(),
       },
-      include: { trainee: true, course: true },
+      include: {
+        trainee: true,
+        course: { select: { title: true, code: true } },
+        location: true,
+        job: true,
+      },
     });
 
     // Create lesson progress records for all lessons in the course
@@ -118,6 +137,8 @@ export class EnrollmentService {
         include: {
           trainee: true,
           course: { select: { title: true, code: true } },
+          location: { select: { name: true, code: true } },
+          job: { select: { jobNumber: true } },
           _count: { select: { progress: true } },
         },
         orderBy: { enrolledAt: 'desc' },

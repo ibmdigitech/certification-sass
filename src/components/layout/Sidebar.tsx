@@ -53,7 +53,7 @@ import {
   UserCheck,
   Building2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useOfflineStatus, useOfflineQueue } from "@/lib/offline/hooks";
 
@@ -321,7 +321,12 @@ export function Sidebar() {
     </nav>
   );
 
-  const BottomConnectionBadge = () => (
+  const BottomConnectionBadge = () => {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    if (!mounted) return null;
+
+    return (
     <div className="pt-2 border-t px-2 flex flex-col gap-1 text-[11px] text-muted-foreground shrink-0">
       <div className="flex items-center justify-between">
         {isOnline ? (
@@ -353,7 +358,8 @@ export function Sidebar() {
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   // ── Sidebar content (shared between desktop & mobile) ─────────────
 

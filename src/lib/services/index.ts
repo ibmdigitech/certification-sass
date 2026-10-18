@@ -21,6 +21,7 @@ export * from './timesheet.service';
 export * from './trainee-document.service';
 export * from './trainee.service';
 export * from './training.service';
+export * from './training-certificate-generator.service';
 export * from './verification-token.service';
 export * from './admin-audit.service';
 export * from './admin-permission.service';

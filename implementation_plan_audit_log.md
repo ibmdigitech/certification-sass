@@ -71,3 +71,35 @@
 - [x] Production build completes successfully
 - [x] Dev server starts cleanly
 - [ ] UI acceptance pending (manual browser testing)
+
+---
+
+## ✅ Completed: Hydration Error Fixes (2026-10-18)
+
+### Context
+Dashboard showed 2 unhandled runtime errors:
+1. `Warning: Prop className did not match` in `BottomConnectionBadge` (Sidebar)
+2. `Warning: validateDOMNesting` + "mounting a new html component" from duplicate document structure
+
+### What was fixed:
+
+1. **`src/lib/offline/hooks.ts` (line 18)** — `useOfflineStatus()` initialized `isOnline` via `typeof navigator !== 'undefined' ? navigator.onLine : true`. In Node.js 24, `navigator` IS defined but `navigator.onLine` is `undefined`, causing SSR to render "Offline Mode" (rose-500) while client renders "Online" (emerald-500). Fixed to: `typeof navigator !== 'undefined' && navigator.onLine !== undefined ? navigator.onLine : true`
+
+2. **`src/lib/offline/OfflineProvider.tsx` (line 65)** — Same `navigator.onLine` initialization pattern in the context provider. Same fix applied.
+
+3. **`src/components/layout/Sidebar.tsx` (line 324)** — `BottomConnectionBadge` consumed `isOnline` from `useOfflineStatus()` without `mounted` gating. Added `useState`/`useEffect` mounted pattern (returns `null` until first client render) as defense-in-depth.
+
+4. **`src/app/(app)/layout.tsx`** — Had duplicate `<html>`, `<head>`, `<body>` tags AND redundant `<Providers>` + `<OfflineProviderWrapper>` wrapping inside `AppShell`. Root layout (`src/app/layout.tsx`) already provides document structure + Providers + OfflineProviderWrapper + OfflineBanner + OfflineIndicator. Flattened to just `<AppShell>{children}</AppShell>`.
+
+5. **`src/app/(auth)/login/layout.tsx`** — Same duplicate document structure issue. Had its own `<html>`, `<head>`, `<body>`, `<Providers>`, and `<OfflineProviderWrapper>`. Removed all in favor of root layout's wrappers. Now just wraps children in a styled div.
+
+### Verification
+- `npx tsc --noEmit` — ✅ 0 errors
+- Dashboard loads with **0 console errors, 0 warnings** (verified via Playwright browser test)
+- Login → Dashboard navigation works correctly
+
+### Acceptance Criteria
+- [x] Dashboard renders without hydration errors
+- [x] TypeScript compiles with zero errors
+- [x] Both error sources eliminated
+- [x] Login page and dashboard functional

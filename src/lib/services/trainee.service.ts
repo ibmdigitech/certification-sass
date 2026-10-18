@@ -1,13 +1,20 @@
 import { prisma } from '@/lib/prisma';
-﻿import { Trainee, TraineeDocument, TrainingSession, Training } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+import { Trainee, TraineeDocument, TrainingSession, Training, Enrollment, Certificate, Location, Job } from '@prisma/client';
 export type TraineeWithRelations = Trainee & {
   documents: TraineeDocument[];
   trainingSessions: (TrainingSession & {
     training: { module: string | null } | null;
   })[];
+  enrollments?: (Enrollment & {
+    course: { title: string; code: string | null };
+    location: { name: string; code: string | null } | null;
+    job: { jobNumber: string } | null;
+  })[];
   _count: {
     documents: number;
     trainingSessions: number;
+    enrollments?: number;
   };
 };
 
@@ -74,8 +81,17 @@ export class TraineeService {
           include: { training: { select: { module: true } } },
           orderBy: { startDate: 'desc' },
         },
+        enrollments: {
+          where: { companyId },
+          include: {
+            course: { select: { title: true, code: true } },
+            location: { select: { name: true, code: true } },
+            job: { select: { jobNumber: true } },
+          },
+          orderBy: { enrolledAt: 'desc' },
+        },
         _count: {
-          select: { documents: true, trainingSessions: true },
+          select: { documents: true, trainingSessions: true, enrollments: true },
         },
       },
     });
@@ -112,7 +128,7 @@ export class TraineeService {
             orderBy: { startDate: 'desc' },
             take: 1,
           },
-          _count: { select: { documents: true, trainingSessions: true } },
+          _count: { select: { documents: true, trainingSessions: true, enrollments: true } },
         },
         orderBy: { [sortBy]: sortOrder },
         skip: (page - 1) * pageSize,

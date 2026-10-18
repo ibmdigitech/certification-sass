@@ -197,6 +197,7 @@ export const AI_MODELS = {
   GPT_4O: 'openai/gpt-4o',
   GPT_4O_MINI: 'openai/gpt-4o-mini',
   GPT_4_TURBO: 'openai/gpt-4-turbo',
+  GPT_OSS_20B: 'openai/gpt-oss-20b',
   GEMINI_1_5_PRO: 'google/gemini-1.5-pro',
   GEMINI_1_5_FLASH: 'google/gemini-1.5-flash',
   LLAMA_3_1_405B: 'meta-llama/llama-3.1-405b-instruct',

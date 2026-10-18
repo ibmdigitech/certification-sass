@@ -26,6 +26,19 @@ interface Trainee {
   firstName: string;
   lastName: string;
   trainingSessions: TrainingSession[];
+  enrollments: Array<{
+    id: number;
+    status: string;
+    enrolledAt: string;
+    completedAt: string | null;
+    course: { title: string; code: string | null };
+    location: { name: string; code: string | null } | null;
+    jobNumber: string | null;
+    timesheetNumber: string | null;
+    trainingDate: string | null;
+    photoUrl: string | null;
+    idUrl: string | null;
+  }>;
 }
 
 const TRAINING_STATUS_BADGES: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
@@ -299,6 +312,70 @@ export default function TraineeTrainingPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     {getTrainingStatusBadge(session.status)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {trainee.enrollments && trainee.enrollments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              Enrollment Details
+            </CardTitle>
+            <CardDescription>
+              Location, job number, timesheet, and other enrollment context
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {trainee.enrollments.map(enrollment => (
+                <div key={enrollment.id} className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                    <h4 className="font-medium">{enrollment.course?.title || 'Training Course'}</h4>
+                    {getTrainingStatusBadge(enrollment.status)}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    {enrollment.location && (
+                      <div>
+                        <span className="text-muted-foreground">Location:</span>
+                        <span className="ml-1 font-medium">{enrollment.location.name} ({enrollment.location.code})</span>
+                      </div>
+                    )}
+                    {enrollment.jobNumber && (
+                      <div>
+                        <span className="text-muted-foreground">Job Number:</span>
+                        <span className="ml-1 font-medium">{enrollment.jobNumber}</span>
+                      </div>
+                    )}
+                    {enrollment.timesheetNumber && (
+                      <div>
+                        <span className="text-muted-foreground">Timesheet:</span>
+                        <span className="ml-1 font-medium">{enrollment.timesheetNumber}</span>
+                      </div>
+                    )}
+                    {enrollment.trainingDate && (
+                      <div>
+                        <span className="text-muted-foreground">Training Date:</span>
+                        <span className="ml-1 font-medium">{formatDate(enrollment.trainingDate)}</span>
+                      </div>
+                    )}
+                    {enrollment.photoUrl && (
+                      <div>
+                        <span className="text-muted-foreground">Photo:</span>
+                        <a href={enrollment.photoUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-600">View</a>
+                      </div>
+                    )}
+                    {enrollment.idUrl && (
+                      <div>
+                        <span className="text-muted-foreground">ID Document:</span>
+                        <a href={enrollment.idUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-600">View</a>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

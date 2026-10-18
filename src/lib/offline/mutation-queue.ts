@@ -128,14 +128,13 @@ class OfflineMutationQueue {
   }
 
   private async syncMutation(mutation: Awaited<ReturnType<typeof getQueuedMutations>>[0]): Promise<{ conflict?: SyncResult['conflicts'][0] }> {
-    const { type, entity, entityId, data, idempotencyKey, dependsOnEntityType, dependsOnEntityId } = mutation;
+const { type, entity, entityId, data, idempotencyKey, dependsOnEntityType, dependsOnEntityId } = mutation;
     const baseUrl = '/api';
-
-let url = `${baseUrl}/`;
+    let url = `${baseUrl}/${entity}`;
     let method = type === 'create' ? 'POST' : type === 'update' ? 'PUT' : 'DELETE';
 
     if (entityId && (type === 'update' || type === 'delete')) {
-      url = `${baseUrl}//`;
+      url = `${baseUrl}/${entity}/${entityId}`;
     }
 
     const headers: HeadersInit = {

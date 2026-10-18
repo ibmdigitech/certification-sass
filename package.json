@@ -62,6 +62,7 @@
     "@types/react": "19.3.0",
     "autoprefixer": "^10.6.1",
     "jest": "^30.5.2",
+    "playwright": "^1.64.1",
     "postcss": "^8.5.29",
     "prisma": "^5.22.0",
     "tailwindcss": "^4.3.3",

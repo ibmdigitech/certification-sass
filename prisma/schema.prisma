@@ -218,6 +218,7 @@ model Job {
   customerReference String?
   quotationId       String?
   salesQuotations   SalesQuotation[]   @relation("QuotationJob")
+  enrollments       Enrollment[]
   priority          String?            @default("NORMAL")
   scope             String?
   internalRemarks   String?
@@ -474,6 +475,15 @@ model Enrollment {
   course             TrainingCourse      @relation(fields: [courseId], references: [id])
   traineeId          Int
   trainee            Trainee             @relation(fields: [traineeId], references: [id])
+  locationId         Int?
+  location           Location?           @relation(fields: [locationId], references: [id])
+  jobId              Int?
+  job                Job?                @relation(fields: [jobId], references: [id])
+  jobNumber          String?
+  trainingDate       DateTime?
+  timesheetNumber    String?
+  photoUrl           String?
+  idUrl              String?
   status             String              @default("active")
   enrolledAt         DateTime            @default(now())
   startedAt          DateTime?
@@ -1028,6 +1038,7 @@ model Location {
   courseLocations        CourseLocation[]
   courseAccreditations   CourseAccreditation[]
   trainees               Trainee[]
+  enrollments            Enrollment[]
   trainingCourses        TrainingCourse[]
   trainingSessions       TrainingSession[]
   certificates           Certificate[]

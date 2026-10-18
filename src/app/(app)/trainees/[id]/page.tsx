@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Edit, Loader2, AlertCircle, CheckCircle, XCircle, FileText, GraduationCap, Award, User, Mail, Phone, Briefcase, Calendar, Building2, IdCard, Shield, Plus } from 'lucide-react';
+import { ArrowLeft, Edit, Loader2, AlertCircle, CheckCircle, XCircle, FileText, GraduationCap, Award, User, Mail, Phone, Briefcase, Calendar, Building2, IdCard, Shield, Plus, UploadCloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,9 +27,23 @@ interface Trainee {
   status: string;
   documents: Array<{ id: number; name: string; type: string; url: string; expiryDate: string | null; status: string; createdAt: string }>;
   trainingSessions: Array<{ id: number; sessionDate: string; duration: number | null; topic: string | null; status: string; training: { module: string | null } | null }>;
+  enrollments: Array<{
+    id: number;
+    status: string;
+    enrolledAt: string;
+    completedAt: string | null;
+    course: { title: string; code: string | null };
+    location: { name: string; code: string | null } | null;
+    jobNumber: string | null;
+    timesheetNumber: string | null;
+    trainingDate: string | null;
+    photoUrl: string | null;
+    idUrl: string | null;
+  }>;
   _count: {
     documents: number;
     trainingSessions: number;
+    enrollments: number;
   };
 }
 
@@ -283,8 +297,8 @@ export default function TraineeDetailPage() {
                   <span className="font-bold text-2xl">{trainee._count.trainingSessions}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">Certificates</span>
-                  <span className="font-bold text-2xl">—</span>
+                  <span className="text-sm text-muted-foreground">Enrollments</span>
+                  <span className="font-bold text-2xl">{trainee._count.enrollments || 0}</span>
                 </div>
               </CardContent>
             </Card>
@@ -294,16 +308,22 @@ export default function TraineeDetailPage() {
         {/* Documents Tab */}
         <TabsContent value="documents" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold">Identity Documents</h2>
-              <p className="text-sm text-muted-foreground">Manage ID documents, photos, and certifications</p>
-            </div>
+          <div>
+            <h2 className="text-xl font-semibold">Identity Documents</h2>
+            <p className="text-sm text-muted-foreground">Manage ID documents, photos, and certifications</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button asChild>
-              <Link href={`/trainees/${traineeId}/documents/new`}>
+              <Link href={`/trainees/${traineeId}/documents`}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Document
               </Link>
             </Button>
+            <Button variant="outline" onClick={() => window.location.href = "/documents/bulk-upload"}>
+              <UploadCloud className="mr-2 h-4 w-4" />
+              Bulk Upload
+            </Button>
+          </div>
           </div>
 
           {trainee.documents.length === 0 ? (
@@ -313,7 +333,7 @@ export default function TraineeDetailPage() {
                 <h3 className="text-lg font-medium mb-2">No documents uploaded</h3>
                 <p className="text-muted-foreground mb-4">Add identity documents to track expiry dates and verification status</p>
                 <Button asChild>
-                  <Link href={`/trainees/${traineeId}/documents/new`}>
+                  <Link href={`/trainees/${traineeId}/documents`}>
                     Add First Document
                   </Link>
                 </Button>
@@ -394,6 +414,71 @@ export default function TraineeDetailPage() {
                       <div className="flex items-center gap-3">
                         {getTrainingStatusBadge(session.status)}
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {trainee.enrollments && trainee.enrollments.length > 0 && (
+            <div className="space-y-4 mt-8">
+              <h3 className="text-lg font-semibold">Enrollment Details</h3>
+              {trainee.enrollments.map(enrollment => (
+                <Card key={enrollment.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Course</p>
+                        <p className="font-medium">{enrollment.course?.title || 'Unknown'}</p>
+                        {enrollment.course?.code && <p className="text-sm text-muted-foreground">Code: {enrollment.course.code}</p>}
+                      </div>
+                      {enrollment.location && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Location</p>
+                          <p className="font-medium">{enrollment.location.name} ({enrollment.location.code})</p>
+                        </div>
+                      )}
+                      {enrollment.jobNumber && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Job Number</p>
+                          <p className="font-medium">{enrollment.jobNumber}</p>
+                        </div>
+                      )}
+                      {enrollment.timesheetNumber && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Timesheet Number</p>
+                          <p className="font-medium">{enrollment.timesheetNumber}</p>
+                        </div>
+                      )}
+                      {enrollment.trainingDate && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Training Date</p>
+                          <p className="font-medium">{formatDate(enrollment.trainingDate)}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs text-muted-foreground">Status</p>
+                        <Badge variant={TRAINING_STATUS_BADGES[enrollment.status]?.variant || 'outline'}>
+                          {TRAINING_STATUS_BADGES[enrollment.status]?.label || enrollment.status}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Enrolled</p>
+                        <p className="font-medium">{formatDate(enrollment.enrolledAt)}</p>
+                      </div>
+                      {enrollment.photoUrl && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Photo</p>
+                          <a href={enrollment.photoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm">View Photo</a>
+                        </div>
+                      )}
+                      {enrollment.idUrl && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">ID Document</p>
+                          <a href={enrollment.idUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm">View ID</a>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

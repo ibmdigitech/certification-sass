@@ -62,7 +62,7 @@ export function useOfflineContext() {
 }
 
 function OfflineProviderInternal({ children }: { children: ReactNode }): React.ReactElement {
-  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' && navigator.onLine !== undefined ? navigator.onLine : true);
   const [wasOffline, setWasOffline] = useState(false);
   const [queueStatus, setQueueStatus] = useState<QueueStatus>({
     pending: 0,

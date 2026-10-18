@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { UserPlus, Search, Loader2, User, GraduationCap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { UserPlus, Search, Loader2, User, GraduationCap, Edit, Trash2, Eye, UploadCloud, Upload, Calendar, FileText, ImageIcon, IdCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,6 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
-import { Video } from "@/components/ui/video";
 import { format } from "date-fns";
 
 interface Trainee {
@@ -50,32 +49,29 @@ interface Enrollment {
 }
 
 export default function TrainingEnrollmentsPage() {
-const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDocDialogOpen, setIsDocDialogOpen] = useState(false);
   const [trainees, setTrainees] = useState<Trainee[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [locations, setLocations] = useState<Array<{id: number; code: string; name: string}>>([]);
   const [formData, setFormData] = useState({
     traineeId: "",
     courseId: "",
+    locationId: "",
+    jobId: "",
+    jobNumber: "",
+    trainingDate: "",
+    timesheetNumber: "",
+    photoFile: null as File | null,
+    idFile: null as File | null,
   });
   const [submitting, setSubmitting] = useState(false);
-  const [originalImage, setOriginalImage] = useState<File | null>(null);
-  const [processedImage, setProcessedImage] = useState<File | null>(null);
-  const [selectedCamera, setSelectedCamera] = useState<'front' | 'back' | null>(
-    null
-  );
-  const [uploading, setUploading] = useState(false);
-  const [documentPreview, setDocumentPreview] = useState(null);
-  const [croppedImage, setCroppedImage] = useState<File | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageContainerRef = useRef<HTMLDivElement>(null);
-  const previewContainerRef = useRef<HTMLDivElement>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const submitForm = () => {};
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const fetchEnrollments = async () => {
     setLoading(true);
@@ -109,13 +105,25 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
 
   const fetchCourses = async () => {
     try {
-      const res = await fetch("/api/training/courses");
+      const res = await fetch("/api/training/courses?activeOnly=true");
       if (res.ok) {
         const data = await res.json();
         setCourses(data.courses || []);
       }
     } catch (error) {
       console.error("Failed to fetch courses:", error);
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const res = await fetch("/api/locations");
+      if (res.ok) {
+        const data = await res.json();
+        setLocations(data.locations || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch locations:", error);
     }
   };
 
@@ -126,6 +134,7 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   useEffect(() => {
     fetchTrainees();
     fetchCourses();
+    fetchLocations();
   }, []);
 
   const validateForm = () => {
@@ -140,17 +149,55 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     return Object.keys(errors).length === 0;
   };
 
+  const uploadFile = async (file: File, type: string): Promise<string | null> => {
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      formDataUpload.append('type', type);
+      const res = await fetch("/api/trainees/documents", {
+        method: "POST",
+        body: formDataUpload,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.url || null;
+      }
+      return null;
+    } catch (error) {
+      console.error("File upload failed:", error);
+      return null;
+    }
+  };
+
   const handleEnroll = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
+    setUploadingFiles(true);
     try {
+      // Upload files first
+      let photoUrl = "";
+      let idUrl = "";
+      if (formData.photoFile) {
+        photoUrl = await uploadFile(formData.photoFile, "photo") || "";
+      }
+      if (formData.idFile) {
+        idUrl = await uploadFile(formData.idFile, "id_document") || "";
+      }
+
       const res = await fetch("/api/training/enrollments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           traineeId: parseInt(formData.traineeId),
           courseId: parseInt(formData.courseId),
+          locationId: formData.locationId ? parseInt(formData.locationId) : undefined,
+          jobId: formData.jobId ? parseInt(formData.jobId) : undefined,
+          jobNumber: formData.jobNumber || undefined,
+          trainingDate: formData.trainingDate || undefined,
+          timesheetNumber: formData.timesheetNumber || undefined,
+          photoUrl,
+          idUrl,
         }),
       });
       if (res.ok) {
@@ -166,6 +213,7 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
       setFormErrors({ general: "Failed to enroll trainee" });
     } finally {
       setSubmitting(false);
+      setUploadingFiles(false);
     }
   };
 
@@ -173,6 +221,13 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     setFormData({
       traineeId: "",
       courseId: "",
+      locationId: "",
+      jobId: "",
+      jobNumber: "",
+      trainingDate: "",
+      timesheetNumber: "",
+      photoFile: null,
+      idFile: null,
     });
     setFormErrors({});
   };
@@ -181,36 +236,6 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     resetForm();
     setFormErrors({});
     setIsDialogOpen(true);
-  };
-
-  const hasCameraPermission = () => {
-    return navigator.mediaDevices && !!navigator.mediaDevices.getUserMedia;
-  };
-
-  const startCamera = async (facingMode: 'user' | 'environment') => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode },
-        audio: false,
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setSelectedCamera(facingMode === 'user' ? 'front' : 'back');
-    } catch (error) {
-      console.error("Failed to start camera:", error);
-    }
-  };
-
-  const stopCamera = () => {
-    const stream = videoRef.current?.srcObject as MediaStream | null;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setSelectedCamera(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -258,52 +283,20 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
             View and manage trainee enrollments across all training courses.
           </p>
         </div>
-        <Button onClick={openEnrollDialog} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Enroll Trainee
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={openEnrollDialog} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Enroll Trainee
+          </Button>
+          <Button variant="outline" onClick={() => window.location.href = "/documents/bulk-upload"} className="gap-2">
+            <UploadCloud className="h-4 w-4" />
+            Bulk Upload
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-4">
-        <div className="relative">
-          <Video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            width="100%"
-            height="200px"
-            className="rounded-lg shadow-lg"
-          />
-          <div className="absolute bottom-2 left-2 right-2 z-10">
-            <span className="text-xs font-medium text-gray-500">Camera: </span>
-            <span className="text-sm font-semibold">{selectedCamera ?? 'None'}</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <button
-            onClick={() => {
-              stopCamera();
-              startCamera('user');
-            }}
-            disabled={!hasCameraPermission()}
-            className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            Front Camera
-          </button>
-          <button
-            onClick={() => {
-              stopCamera();
-              startCamera('environment');
-            }}
-            disabled={!hasCameraPermission()}
-            className="flex-1 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-          >
-            Back Camera
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 w-full">
           <div className="relative flex-1 min-w-[250px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -313,11 +306,23 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
               className="pl-10"
             />
           </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="dropped">Dropped</SelectItem>
+              <SelectItem value="withdrawn">Withdrawn</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Enroll Trainee in Course</DialogTitle>
           </DialogHeader>
@@ -371,6 +376,86 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
                 <p className="text-sm text-destructive">{formErrors.courseId}</p>
               )}
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="locationId">Location</Label>
+              <Select
+                value={formData.locationId}
+                onValueChange={(value) => setFormData({ ...formData, locationId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select location (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No specific location</SelectItem>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc.id} value={String(loc.id)}>
+                      {loc.name} ({loc.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="jobNumber">Job Number</Label>
+                <Input
+                  id="jobNumber"
+                  value={formData.jobNumber}
+                  onChange={(e) => setFormData({ ...formData, jobNumber: e.target.value })}
+                  placeholder="e.g. JOB-2024-001"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="timesheetNumber">Timesheet Number</Label>
+                <Input
+                  id="timesheetNumber"
+                  value={formData.timesheetNumber}
+                  onChange={(e) => setFormData({ ...formData, timesheetNumber: e.target.value })}
+                  placeholder="e.g. TS-001"
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="trainingDate">Training Date</Label>
+              <Input
+                id="trainingDate"
+                type="date"
+                value={formData.trainingDate}
+                onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="photoFile">Photo Upload</Label>
+                <Input
+                  id="photoFile"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setFormData({ ...formData, photoFile: file });
+                  }}
+                />
+                {formData.photoFile && (
+                  <p className="text-xs text-muted-foreground">{formData.photoFile.name}</p>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="idFile">ID Document Upload</Label>
+                <Input
+                  id="idFile"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setFormData({ ...formData, idFile: file });
+                  }}
+                />
+                {formData.idFile && (
+                  <p className="text-xs text-muted-foreground">{formData.idFile.name}</p>
+                )}
+              </div>
+            </div>
             <DialogFooter>
               <Button
                 type="button"
@@ -379,33 +464,19 @@ const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
                   setIsDialogOpen(false);
                   resetForm();
                 }}
-                disabled={submitting}
+                disabled={submitting || uploadingFiles}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting || uploadingFiles}>
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Enroll Trainee
+                {uploadingFiles && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {uploadingFiles ? "Uploading files..." : "Enroll Trainee"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-
-          <div className="flex items-end gap-4">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="dropped">Dropped</SelectItem>
-                <SelectItem value="withdrawn">Withdrawn</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
       <Card>
         <CardContent className="pt-0">

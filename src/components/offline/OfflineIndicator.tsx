@@ -6,9 +6,15 @@ import { WifiOff, Wifi, AlertCircle, RotateCcw, CloudOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function OfflineIndicator({ className, showQueueStatus = true }: { className?: string; showQueueStatus?: boolean }) {
+  const [mounted, setMounted] = useState(false);
   const { isOnline, wasOffline, queueStatus, lastOnlineAt, lastOfflineAt } = useOfflineStatus();
   const { processQueue, retryFailed } = useOfflineQueue();
 
+  // Gate on mount so SSR output (no navigator) matches the initial client render
+  // before navigator.onLine is read. This prevents hydration mismatches.
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return null;
   if (isOnline && !wasOffline) {
     return null;
   }
@@ -64,9 +70,13 @@ export function OfflineIndicator({ className, showQueueStatus = true }: { classN
 }
 
 export function OfflineBanner({ className }: { className?: string }) {
+  const [mounted, setMounted] = useState(false);
   const { isOnline, wasOffline, queueStatus } = useOfflineStatus();
-  const { processQueue } = useOfflineQueue();
+  const { processQueue, retryFailed } = useOfflineQueue();
 
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return null;
   if (isOnline && !wasOffline) return null;
 
   return (
@@ -120,11 +130,6 @@ export function OfflineBanner({ className }: { className?: string }) {
       </div>
     </div>
   );
-}
-
-function retryFailed() {
-  const { retryFailed: retry } = useOfflineQueue();
-  retry();
 }
 
 export function QueueStatusPanel({ className }: { className?: string }) {
