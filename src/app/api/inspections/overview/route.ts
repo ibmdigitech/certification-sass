@@ -26,17 +26,17 @@ export async function GET(request: NextRequest) {
       totalCertificates,
       expiringCertificates,
     ] = await Promise.all([
-      prisma.inspection.count({ where: { companyId } }),
-      prisma.inspection.count({ where: { companyId, status: 'IN_PROGRESS' } }),
-      prisma.inspection.count({ where: { companyId, status: 'SCHEDULED' } }),
-      prisma.inspection.count({ where: { companyId, status: 'COMPLETED' } }),
-      prisma.inspectionReport.count({ where: { companyId } }),
-      prisma.inspectionReport.count({ where: { companyId, status: 'submitted_for_review' } }),
-      prisma.inspectionReport.count({ where: { companyId, status: 'approved' } }),
-      prisma.inspectionReport.count({ where: { companyId, status: 'rejected' } }),
-      prisma.failureWorkflow.count({ where: { companyId, status: 'open' } }),
-      prisma.certificate.count({ where: { companyId, certificateType: 'INSPECTION' } }),
-      prisma.certificate.count({
+      (prisma as any).inspection.count({ where: { companyId } }),
+      (prisma as any).inspection.count({ where: { companyId, status: 'IN_PROGRESS' } }),
+      (prisma as any).inspection.count({ where: { companyId, status: 'SCHEDULED' } }),
+      (prisma as any).inspection.count({ where: { companyId, status: 'COMPLETED' } }),
+      (prisma as any).inspectionReport.count({ where: { companyId } }),
+      (prisma as any).inspectionReport.count({ where: { companyId, status: 'submitted_for_review' } }),
+      (prisma as any).inspectionReport.count({ where: { companyId, status: 'approved' } }),
+      (prisma as any).inspectionReport.count({ where: { companyId, status: 'rejected' } }),
+      (prisma as any).failureWorkflow.count({ where: { companyId, status: 'open' } }),
+      (prisma as any).certificate.count({ where: { companyId, certificateType: 'INSPECTION' } }),
+      (prisma as any).certificate.count({
         where: {
           companyId,
           certificateType: 'INSPECTION',

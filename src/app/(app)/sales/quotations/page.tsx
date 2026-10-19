@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, FileSignature, ArrowRight, Loader2, CheckCircle2, Briefcase, ExternalLink } from "lucide-react";
+import { Plus, Search, FileSignature, ArrowRight, Loader2, CheckCircle2, Briefcase, ExternalLink, FileText, Download } from "lucide-react";
 
 interface QuotationRecord {
   id: number;
@@ -49,6 +49,7 @@ export default function SalesQuotationsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [convertingId, setConvertingId] = useState<number | null>(null);
+  const [printingId, setPrintingId] = useState<number | null>(null);
 
   // Form states
   const [customerId, setCustomerId] = useState("");
@@ -140,6 +141,28 @@ export default function SalesQuotationsPage() {
       console.error("Error converting quotation:", err);
     } finally {
       setConvertingId(null);
+    }
+  };
+
+  const handlePrintPDF = async (quotationId: number, quotationNumber: string) => {
+    setPrintingId(quotationId);
+    try {
+      const res = await fetch(`/api/sales/quotations/${quotationId}/pdf`);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${quotationNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (err) {
+      console.error("Error printing quotation:", err);
+    } finally {
+      setPrintingId(null);
     }
   };
 
@@ -288,12 +311,13 @@ export default function SalesQuotationsPage() {
                 <TableHead className="font-bold text-xs text-right">Total (AED)</TableHead>
                 <TableHead className="font-bold text-xs text-center">Status</TableHead>
                 <TableHead className="font-bold text-xs text-right">Conversion Action</TableHead>
+                <TableHead className="font-bold text-xs text-center">Print</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center">
+                  <TableCell colSpan={9} className="h-24 text-center text-xs text-muted-foreground">
                     <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
@@ -364,6 +388,22 @@ export default function SalesQuotationsPage() {
                             Convert to Job
                           </Button>
                         )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={printingId === q.id}
+                          onClick={() => handlePrintPDF(q.id, q.quotationNumber)}
+                          title="Print Quotation PDF"
+                        >
+                          {printingId === q.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileText className="h-4 w-4" />
+                          )}
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );

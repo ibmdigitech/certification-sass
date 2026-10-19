@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const where: any = { companyId };
     if (status) where.status = status;
 
-    const deliveries = await prisma.deliveryLog.findMany({
+    const deliveries = await (prisma as any).deliveryLog.findMany({
       where,
       include: {
         certificate: {
@@ -65,14 +65,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'certificateId is required' }, { status: 400 });
     }
 
-    const cert = await prisma.certificate.findFirst({
+    const cert = await (prisma as any).certificate.findFirst({
       where: { id: Number(body.certificateId), companyId },
     });
     if (!cert) {
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404 });
     }
 
-    const delivery = await prisma.deliveryLog.create({
+    const delivery = await (prisma as any).deliveryLog.create({
       data: {
         companyId,
         certificateId: cert.id,

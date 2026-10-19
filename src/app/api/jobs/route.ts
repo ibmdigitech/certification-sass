@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
       scope: body.scope,
       internalRemarks: body.internalRemarks,
       jobNumber: body.jobNumber,
+      jobNumberPrefix: body.jobNumberPrefix,
       services: body.services,
       type: body.type,
     } as CreateJobInput);

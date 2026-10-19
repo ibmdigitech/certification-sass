@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [findings, total] = await Promise.all([
-      prisma.inspectionReport.findMany({
+      (prisma as any).inspectionReport.findMany({
         where,
         include: {
           job: {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.inspectionReport.count({ where }),
+      (prisma as any).inspectionReport.count({ where }),
     ]);
 
     return NextResponse.json({

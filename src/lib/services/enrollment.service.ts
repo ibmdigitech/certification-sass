@@ -286,7 +286,7 @@ export class LessonProgressService {
     });
   }
 
-  static async checkCourseCompletion(enrollmentId: number, companyId: number) {
+static async checkCourseCompletion(enrollmentId: number, companyId: number) {
     const enrollment = await prisma.enrollment.findFirst({
       where: { id: enrollmentId, companyId },
       include: {
@@ -300,6 +300,7 @@ export class LessonProgressService {
           },
         },
         progress: true,
+        trainee: true,
       },
     });
 
@@ -315,10 +316,16 @@ export class LessonProgressService {
         where: { id: enrollmentId, companyId },
         data: { status: 'completed', completedAt: new Date() },
       });
+
+      // NOTE: Certificate generation is NOT automatic.
+      // It requires explicit generation via POST /api/training/certificates/generate
+      // which validates the full job/scheduling workflow first.
+      // This prevents certificates being issued without proper job creation and scheduling.
+
       return true;
     }
 
-    return false;
+return false;
   }
 }
 

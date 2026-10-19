@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const categoryCode = searchParams.get('categoryCode');
 
-    let categories = await prisma.generalDefinition.findMany({
+    let categories = await (prisma as any).generalDefinition.findMany({
       where: { companyId },
       include: {
         items: { orderBy: { sortOrder: 'asc' } },
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     // Auto-seed defaults if empty
     if (categories.length === 0) {
       for (const cat of DEFAULT_CATEGORIES) {
-        await prisma.generalDefinition.create({
+        await (prisma as any).generalDefinition.create({
           data: {
             companyId,
             code: cat.code,
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
           },
         });
       }
-      categories = await prisma.generalDefinition.findMany({
+      categories = await (prisma as any).generalDefinition.findMany({
         where: { companyId },
         include: {
           items: { orderBy: { sortOrder: 'asc' } },
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the definition belongs to this company
-    const def = await prisma.generalDefinition.findFirst({
+    const def = await (prisma as any).generalDefinition.findFirst({
       where: { id: Number(definitionId), companyId },
       select: { id: true, code: true },
     });
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Duplicate key detection within the category
-    const dup = await prisma.generalDefinitionItem.findFirst({
+    const dup = await (prisma as any).generalDefinitionItem.findFirst({
       where: { definitionId: Number(definitionId), key: { equals: key, mode: 'insensitive' } },
       select: { id: true, key: true },
     });
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newItem = await prisma.generalDefinitionItem.create({
+    const newItem = await (prisma as any).generalDefinitionItem.create({
       data: {
         definitionId: Number(definitionId),
         key,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await prisma.auditLog.create({
+    await (prisma as any).auditLog.create({
       data: {
         companyId,
         userId: Number(session.user.id) || 0,
@@ -157,7 +157,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verify item belongs to a definition in this company
-    const item = await prisma.generalDefinitionItem.findFirst({
+    const item = await (prisma as any).generalDefinitionItem.findFirst({
       where: { id: Number(id) },
       include: { definition: { select: { id: true, companyId: true, code: true } } },
     });
@@ -167,7 +167,7 @@ export async function PATCH(request: NextRequest) {
 
     // Duplicate key check (excluding self)
     if (data.key && data.key !== item.key) {
-      const dup = await prisma.generalDefinitionItem.findFirst({
+const dup = await (prisma as any).generalDefinitionItem.findFirst({
         where: {
           definitionId: item.definitionId,
           key: { equals: data.key, mode: 'insensitive' },
@@ -183,7 +183,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const updated = await prisma.generalDefinitionItem.update({
+    const updated = await (prisma as any).generalDefinitionItem.update({
       where: { id: Number(id) },
       data: {
         key: data.key,
@@ -194,7 +194,7 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    await prisma.auditLog.create({
+    await (prisma as any).auditLog.create({
       data: {
         companyId,
         userId: Number(session.user.id) || 0,

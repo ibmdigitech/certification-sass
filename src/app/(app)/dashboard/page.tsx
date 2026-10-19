@@ -61,6 +61,8 @@ interface DashboardPayload {
     reportsNeedCertificateCount: number;
     failureReportsNeedsApprovalCount: number;
     failureApprovedReportsCount: number;
+    certificateRevisions: any[];
+    certificateTeamPerformance: any[];
   };
   salesDashboard: {
     customersCreated: number;
@@ -70,6 +72,7 @@ interface DashboardPayload {
   };
   recentActivity: any[];
   expiringCertificates: any[];
+  revisedCertificates: any[];
 }
 
 export default function DashboardPage() {
@@ -124,6 +127,8 @@ export default function DashboardPage() {
     reportsNeedCertificateCount: 0,
     failureReportsNeedsApprovalCount: 0,
     failureApprovedReportsCount: 0,
+    certificateRevisions: [],
+    certificateTeamPerformance: [],
   };
 
   const sales = data?.salesDashboard ?? {
@@ -492,9 +497,65 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-        </TabsContent>
 
-        {/* Tab 2: Sales Dashboard (Matches Screenshot Page 3) */}
+          {/* Certificate Revisions Section */}
+          <div className="border rounded-lg bg-card overflow-hidden mt-4">
+            <button
+              type="button"
+              onClick={() => setOpenAccordion(openAccordion === "revisions" ? null : "revisions")}
+              className="w-full flex items-center justify-between p-4 bg-purple-700 text-white font-medium hover:bg-purple-800 transition"
+            >
+              <div className="flex items-center gap-2">
+                {openAccordion === "revisions" ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                <span>Certificate Revisions Report</span>
+              </div>
+              <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs px-2.5">
+                {insp.certificateRevisions?.length || 0}
+              </Badge>
+            </button>
+            {openAccordion === "revisions" && (
+              <div className="p-4 space-y-3 bg-muted/10">
+                <p className="text-xs text-muted-foreground">
+                  Certificates requiring revisions. Shows job number, revision count, and which certification team member made corrections.
+                </p>
+                {insp.certificateRevisions?.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No certificate revisions pending.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b text-left">
+                          <th className="pb-2">Certificate Number</th>
+                          <th className="pb-2">Job Number</th>
+                          <th className="pb-2">Revision</th>
+                          <th className="pb-2">Created By</th>
+                          <th className="pb-2">Approved By</th>
+                          <th className="pb-2">Revisions By</th>
+                          <th className="pb-2">Root Cause</th>
+                          <th className="pb-2">Last Updated</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {insp.certificateRevisions.map((cert: any) => (
+                          <tr key={cert.id} className="border-b">
+                            <td className="py-2 font-mono">{cert.number}</td>
+                            <td className="py-2">{cert.jobNumber || 'N/A'}</td>
+                            <td className="py-2">R{cert.revision}</td>
+                            <td className="py-2">{cert.createdByName || '—'}</td>
+                            <td className="py-2">{cert.approvedByName || '—'}</td>
+                            <td className="py-2">{cert.revisions.join(', ') || '—'}</td>
+                            <td className="py-2">{cert.rootCauses.join('; ') || '—'}</td>
+                            <td className="py-2">{new Date(cert.updatedAt).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </TabsContent>
         <TabsContent value="sales" className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
@@ -666,6 +727,50 @@ export default function DashboardPage() {
               </CardHeader>
             </Card>
           </div>
+
+          {/* Revised Certificates Report for Training */}
+          {data?.revisedCertificates && data.revisedCertificates.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">Revised Certificates Report</CardTitle>
+                <CardDescription>
+                  Training certificates that were revised - track which certification team member made corrections
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="pb-2">Certificate Number</th>
+                        <th className="pb-2">Job Number</th>
+                        <th className="pb-2">Revision</th>
+                        <th className="pb-2">Created By</th>
+                        <th className="pb-2">Approved By</th>
+                        <th className="pb-2">Revised By</th>
+                        <th className="pb-2">Root Cause</th>
+                        <th className="pb-2">Last Updated</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.revisedCertificates.map((cert: any) => (
+                        <tr key={cert.id} className="border-b">
+                          <td className="py-2 font-mono">{cert.number}</td>
+                          <td className="py-2">{cert.jobNumber || 'N/A'}</td>
+                          <td className="py-2">R{cert.revision}</td>
+                          <td className="py-2">{cert.createdByName || '—'}</td>
+                          <td className="py-2">{cert.approvedByName || '—'}</td>
+                          <td className="py-2">{cert.revisions.join(', ') || '—'}</td>
+                          <td className="py-2">{cert.rootCauses.join('; ') || '—'}</td>
+                          <td className="py-2">{new Date(cert.updatedAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

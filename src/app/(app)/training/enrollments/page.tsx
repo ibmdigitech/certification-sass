@@ -1,11 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserPlus, Search, Loader2, User, GraduationCap, Edit, Trash2, Eye, UploadCloud, Upload, Calendar, FileText, ImageIcon, IdCard } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -13,17 +21,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { UserPlus, Search, Loader2, User, UploadCloud, RefreshCw } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 
 interface Trainee {
@@ -31,6 +33,12 @@ interface Trainee {
   firstName: string;
   lastName: string;
   employeeId: string | null;
+  emiratesId: string | null;
+  passportNumber: string | null;
+  visaNumber: string | null;
+  licenseNumber: string | null;
+  idTypeUsed: string | null;
+  photoUrl: string | null;
 }
 
 interface Course {
@@ -44,6 +52,12 @@ interface Enrollment {
   status: string;
   enrolledAt: string;
   completedAt: string | null;
+  jobNumber: string | null;
+  trainingDate: string | null;
+  timesheetNumber: string | null;
+  photoUrl: string | null;
+  idUrl: string | null;
+  location: { id: number; code: string; name: string } | null;
   trainee: Trainee;
   course: Course;
 }
@@ -54,7 +68,6 @@ export default function TrainingEnrollmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDocDialogOpen, setIsDocDialogOpen] = useState(false);
   const [trainees, setTrainees] = useState<Trainee[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [locations, setLocations] = useState<Array<{id: number; code: string; name: string}>>([]);
@@ -68,6 +81,11 @@ export default function TrainingEnrollmentsPage() {
     timesheetNumber: "",
     photoFile: null as File | null,
     idFile: null as File | null,
+    emiratesId: "",
+    passportNumber: "",
+    visaNumber: "",
+    licenseNumber: "",
+    idTypeUsed: "EMIRATES_ID",
   });
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -175,7 +193,6 @@ export default function TrainingEnrollmentsPage() {
     setSubmitting(true);
     setUploadingFiles(true);
     try {
-      // Upload files first
       let photoUrl = "";
       let idUrl = "";
       if (formData.photoFile) {
@@ -198,6 +215,11 @@ export default function TrainingEnrollmentsPage() {
           timesheetNumber: formData.timesheetNumber || undefined,
           photoUrl,
           idUrl,
+          emiratesId: formData.emiratesId || undefined,
+          passportNumber: formData.passportNumber || undefined,
+          visaNumber: formData.visaNumber || undefined,
+          licenseNumber: formData.licenseNumber || undefined,
+          idTypeUsed: formData.idTypeUsed || undefined,
         }),
       });
       if (res.ok) {
@@ -228,6 +250,11 @@ export default function TrainingEnrollmentsPage() {
       timesheetNumber: "",
       photoFile: null,
       idFile: null,
+      emiratesId: "",
+      passportNumber: "",
+      visaNumber: "",
+      licenseNumber: "",
+      idTypeUsed: "EMIRATES_ID",
     });
     setFormErrors({});
   };
@@ -415,14 +442,71 @@ export default function TrainingEnrollmentsPage() {
                 />
               </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="trainingDate">Training Date</Label>
-              <Input
-                id="trainingDate"
-                type="date"
-                value={formData.trainingDate}
-                onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value })}
-              />
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="trainingDate">Training Date</Label>
+                <Input
+                  id="trainingDate"
+                  type="date"
+                  value={formData.trainingDate}
+                  onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="idTypeUsed">ID Type for Certificate</Label>
+                <Select
+                  value={formData.idTypeUsed}
+                  onValueChange={(value) => setFormData({ ...formData, idTypeUsed: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select ID type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EMIRATES_ID">Emirates ID</SelectItem>
+                    <SelectItem value="PASSPORT">Passport</SelectItem>
+                    <SelectItem value="VISA">Visa</SelectItem>
+                    <SelectItem value="LICENSE">License</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-2 md:grid-cols-4">
+              <div className="grid gap-2">
+                <Label htmlFor="emiratesId">Emirates ID Number</Label>
+                <Input
+                  id="emiratesId"
+                  value={formData.emiratesId}
+                  onChange={(e) => setFormData({ ...formData, emiratesId: e.target.value })}
+                  placeholder="784-1990-1234567-1"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="passportNumber">Passport Number</Label>
+                <Input
+                  id="passportNumber"
+                  value={formData.passportNumber}
+                  onChange={(e) => setFormData({ ...formData, passportNumber: e.target.value })}
+                  placeholder="P1234567"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="visaNumber">Visa Number</Label>
+                <Input
+                  id="visaNumber"
+                  value={formData.visaNumber}
+                  onChange={(e) => setFormData({ ...formData, visaNumber: e.target.value })}
+                  placeholder="VISA-123456"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="licenseNumber">License Number</Label>
+                <Input
+                  id="licenseNumber"
+                  value={formData.licenseNumber}
+                  onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
+                  placeholder="LIC-123456"
+                />
+              </div>
             </div>
             <div className="grid gap-2 md:grid-cols-2">
               <div className="grid gap-2">
@@ -507,6 +591,11 @@ export default function TrainingEnrollmentsPage() {
                   <TableRow>
                     <TableHead>Trainee</TableHead>
                     <TableHead>Course</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Job Number</TableHead>
+                    <TableHead>Training Date</TableHead>
+                    <TableHead>Timesheet #</TableHead>
+                    <TableHead>Documents</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Enrolled Date</TableHead>
                     <TableHead>Completed Date</TableHead>
@@ -537,6 +626,31 @@ export default function TrainingEnrollmentsPage() {
                             <p className="text-sm text-muted-foreground">
                               Code: {enrollment.course.code}
                             </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {enrollment.location ? `${enrollment.location.name} ({enrollment.location.code})` : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{enrollment.jobNumber || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {enrollment.trainingDate ? format(new Date(enrollment.trainingDate), "MMM dd, yyyy") : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{enrollment.timesheetNumber || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {enrollment.photoUrl && (
+                            <span className="text-emerald-600" title="Photo uploaded">
+                              <span className="h-4 w-4">📷</span>
+                            </span>
+                          )}
+                          {enrollment.idUrl && (
+                            <span className="text-blue-600" title="ID document uploaded">
+                              <span className="h-4 w-4">🆔</span>
+                            </span>
+                          )}
+                          {!enrollment.photoUrl && !enrollment.idUrl && (
+                            <span className="text-muted-foreground text-xs">No documents</span>
                           )}
                         </div>
                       </TableCell>

@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
         name: true,
         email: true,
         role: true,
-        status: true,
         createdAt: true,
       },
       orderBy: { name: 'asc' },
@@ -59,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password || 'TSC@2026!', 10);
 
-    const newUser = await prisma.user.create({
+    const newUser = await (prisma as any).user.create({
       data: {
         companyId,
         name,
@@ -73,7 +72,6 @@ export async function POST(request: NextRequest) {
         name: true,
         email: true,
         role: true,
-        status: true,
       },
     });
 

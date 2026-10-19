@@ -18,6 +18,8 @@ export interface CompleteCertificateData {
   generateSignature?: boolean;
   status?: 'draft' | 'issued';
   jobServiceId?: number;
+  equipmentCategory?: string;
+  certificateType?: string;
 }
 
 export interface CertificateWithDetails {
@@ -29,6 +31,36 @@ export interface CertificateWithDetails {
 }
 
 export class CertificateManager {
+  static async getValidityMonths(companyId: number, certificateType: string, equipmentCategory?: string): Promise<number | null> {
+    // First try exact match on equipment category
+    if (equipmentCategory) {
+      const rule = await prisma.certificateValidityRule.findFirst({
+        where: {
+          companyId,
+          certificateType,
+          equipmentCategory: { equals: equipmentCategory, mode: 'insensitive' },
+          isActive: true,
+        },
+        orderBy: { isDefault: 'desc' },
+      });
+      if (rule) return rule.validityMonths;
+    }
+
+    // Fallback to default rule for certificate type
+    const defaultRule = await prisma.certificateValidityRule.findFirst({
+      where: {
+        companyId,
+        certificateType,
+        isDefault: true,
+        isActive: true,
+      },
+    });
+    if (defaultRule) return defaultRule.validityMonths;
+
+    // Final fallback - no rule found
+    return null;
+  }
+
   static async createCompleteCertificate(data: CompleteCertificateData): Promise<CertificateWithDetails> {
     const {
       companyId,
@@ -42,6 +74,8 @@ export class CertificateManager {
       generateSignature = true,
       status = 'issued',
       jobServiceId,
+      equipmentCategory,
+      certificateType = 'INSPECTION',
     } = data;
 
     const certificate = await CertificateService.createCertificate({
@@ -77,17 +111,24 @@ export class CertificateManager {
 
       const pdfBase64 = pdfBuffer.toString('base64');
       pdfUrl = `data:application/pdf;base64,${pdfBase64}`;
-
-      await prisma.certificate.update({
-        where: { id: certificate.id },
-        data: { pdfUrl, status },
-      });
-    } else {
-      await prisma.certificate.update({
-        where: { id: certificate.id },
-        data: { status },
-      });
     }
+
+    // Calculate expiry date based on validity rules
+    const validityMonths = await this.getValidityMonths(companyId, certificateType, equipmentCategory);
+    const issueDate = new Date();
+    const expiryDate = validityMonths 
+      ? new Date(Date.now() + validityMonths * 30 * 24 * 60 * 60 * 1000)
+      : null;
+
+    await prisma.certificate.update({
+      where: { id: certificate.id },
+      data: { 
+        pdfUrl, 
+        status,
+        issueDate,
+        expiryDate,
+      },
+    });
 
     const verificationUrl = `${baseUrl}/verify/${certificate.number}`;
 
@@ -228,7 +269,13 @@ export class CertificateManager {
     const [certificates, total] = await Promise.all([
       prisma.certificate.findMany({
         where,
-        include: { job: { include: { customer: true } } },
+        include: {
+          job: { include: { customer: true } },
+          deliveryLogs: {
+            orderBy: { createdAt: 'desc' },
+            take: 3,
+          },
+        },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,

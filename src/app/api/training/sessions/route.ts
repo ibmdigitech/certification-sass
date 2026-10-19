@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // Validate location-accreditation combination
     if (body.locationId) {
-      const location = await prisma.location.findFirst({
+      const location = await (prisma as any).location.findFirst({
         where: { id: body.locationId, companyId: session.user.companyId },
         select: { code: true },
       });
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
       let accreditationCode: string | undefined;
       if (body.accreditationId) {
-        const accred = await prisma.accreditationAuthority.findFirst({
+        const accred = await (prisma as any).accreditationAuthority.findFirst({
           where: { id: body.accreditationId, companyId: session.user.companyId },
           select: { code: true },
         });
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
       // Also validate against the course's location/accreditation if courseId is provided
       if (body.courseId) {
-        const course = await prisma.trainingCourse.findFirst({
+        const course = await (prisma as any).trainingCourse.findFirst({
           where: { id: body.courseId, companyId: session.user.companyId },
           select: { locationId: true, accreditationId: true },
         });

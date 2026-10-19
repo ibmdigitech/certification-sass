@@ -37,17 +37,17 @@ type ModelDelegate = {
 
 function getModel(entity: string): ModelDelegate | null {
   const models: Record<string, ModelDelegate> = {
-    jobs: prisma.job as unknown as ModelDelegate,
-    jobServices: prisma.jobService as unknown as ModelDelegate,
-    certificates: prisma.certificate as unknown as ModelDelegate,
-    trainees: prisma.trainee as unknown as ModelDelegate,
-    inspections: prisma.inspection as unknown as ModelDelegate,
-    trainingSessions: prisma.trainingSession as unknown as ModelDelegate,
-    timesheets: prisma.timesheet as unknown as ModelDelegate,
-    customers: prisma.customer as unknown as ModelDelegate,
-    users: prisma.user as unknown as ModelDelegate,
-    companies: prisma.company as unknown as ModelDelegate,
-    locations: prisma.location as unknown as ModelDelegate,
+    jobs: (prisma as any).job as unknown as ModelDelegate,
+    jobServices: (prisma as any).jobService as unknown as ModelDelegate,
+    certificates: (prisma as any).certificate as unknown as ModelDelegate,
+    trainees: (prisma as any).trainee as unknown as ModelDelegate,
+    inspections: (prisma as any).inspection as unknown as ModelDelegate,
+    trainingSessions: (prisma as any).trainingSession as unknown as ModelDelegate,
+    timesheets: (prisma as any).timesheet as unknown as ModelDelegate,
+    customers: (prisma as any).customer as unknown as ModelDelegate,
+    users: (prisma as any).user as unknown as ModelDelegate,
+    companies: (prisma as any).company as unknown as ModelDelegate,
+    locations: (prisma as any).location as unknown as ModelDelegate,
   };
   return models[entity] || null;
 }
@@ -103,7 +103,7 @@ async function checkConflict(mutation: SyncRequest['mutations'][0], companyId: n
 
 async function isDuplicate(idempotencyKey: string | undefined, companyId: number): Promise<boolean> {
   if (!idempotencyKey) return false;
-  const existing = await prisma.syncQueue.findFirst({
+  const existing = await (prisma as any).syncQueue.findFirst({
     where: { idempotencyKey, status: 'SYNCED', companyId },
   });
   return !!existing;
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
 
       if (applied) {
         // Create SyncQueue entry to record successful sync
-        await prisma.syncQueue.create({
+        await (prisma as any).syncQueue.create({
           data: {
             companyId,
             userId: Number(userId),

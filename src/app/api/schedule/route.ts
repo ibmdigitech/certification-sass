@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
 
     const [jobServices, trainingSessions, inspections] = await Promise.all([
-      prisma.jobService.findMany({
+      (prisma as any).jobService.findMany({
         where,
         include: {
           job: {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         },
         orderBy: [{ scheduledStart: 'asc' }, { createdAt: 'desc' }],
       }),
-      prisma.trainingSession.findMany({
+      (prisma as any).trainingSession.findMany({
         where: { companyId },
         include: {
           job: { select: { id: true, jobNumber: true } },
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { startDate: 'asc' },
       }),
-      prisma.inspection.findMany({
+      (prisma as any).inspection.findMany({
         where: { companyId },
         include: {
           job: { select: { id: true, jobNumber: true } },

@@ -58,21 +58,21 @@ export async function GET(request: NextRequest) {
     }
     const companyId = session.user.companyId;
 
-    let settings = await prisma.notificationSetting.findMany({
+    let settings = await (prisma as any).notificationSetting.findMany({
       where: { companyId },
       orderBy: { createdAt: 'asc' },
     });
 
     if (settings.length === 0) {
       for (const item of DEFAULT_NOTIFICATIONS) {
-        await prisma.notificationSetting.create({
+        await (prisma as any).notificationSetting.create({
           data: {
             companyId,
             ...item,
           },
         });
       }
-      settings = await prisma.notificationSetting.findMany({
+      settings = await (prisma as any).notificationSetting.findMany({
         where: { companyId },
         orderBy: { createdAt: 'asc' },
       });

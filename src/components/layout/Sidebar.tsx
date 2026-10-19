@@ -11,6 +11,7 @@ import {
   BookOpen,
   Users,
   ClipboardCheck,
+  ClipboardList,
   FileCheck2,
   Award,
   ShieldCheck,
@@ -39,7 +40,6 @@ import {
   ListChecks,
   Eye,
   CalendarClock,
-  ClipboardList,
   BarChart3,
   UserPlus,
   Contact,
@@ -52,6 +52,7 @@ import {
   Clock,
   UserCheck,
   Building2,
+  RefreshCw,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -101,6 +102,7 @@ const operationsGroup: NavGroup = {
     { name: "Inspector Calendar", href: "/schedule", icon: CalendarDays },
     // { name: "Job Performing", href: "/job-performing", icon: ClipboardCheck }, // TODO: Implement page
     { name: "Delivery Confirmation", href: "/delivery", icon: Truck },
+    { name: "Delivery Logs", href: "/delivery-logs", icon: ClipboardList },
     { name: "Certificates", href: "/certificates", icon: Award },
     // { name: "Timesheets", href: "/timesheets", icon: Clock }, // TODO: Implement page
     // { name: "Payments", href: "/payments", icon: CreditCard }, // TODO: Implement page
@@ -119,6 +121,7 @@ const trainingCertificationGroup: NavGroup = {
     { name: "Assessments", href: "/training/assessments", icon: ClipboardList },
     { name: "Competencies", href: "/training/competencies", icon: Award },
     { name: "Certificates", href: "/training/certificates", icon: FileCheck2 },
+    { name: "Certificate Renewal", href: "/training/certificates/renewal", icon: RefreshCw },
     { name: "Reports", href: "/training/reports", icon: BarChart3 },
   ],
 };
@@ -193,7 +196,7 @@ export function Sidebar() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const isSetup = pathname.startsWith("/team") || pathname.startsWith("/customers") || pathname.startsWith("/setup");
     const isSales = pathname.startsWith("/sales") || pathname.startsWith("/jobs");
-    const isOperations = pathname.startsWith("/schedule") || pathname.startsWith("/job-performing") || pathname.startsWith("/delivery") || pathname.startsWith("/certificates") || pathname.startsWith("/timesheets") || pathname.startsWith("/accounts") || pathname.startsWith("/payments");
+    const isOperations = pathname.startsWith("/schedule") || pathname.startsWith("/job-performing") || pathname.startsWith("/delivery") || pathname.startsWith("/delivery-logs") || pathname.startsWith("/certificates") || pathname.startsWith("/timesheets") || pathname.startsWith("/accounts") || pathname.startsWith("/payments");
     const isTraining = pathname.startsWith("/training") || pathname.startsWith("/trainees");
     const isInspection = pathname.startsWith("/inspections");
     const isField = pathname.startsWith("/field");

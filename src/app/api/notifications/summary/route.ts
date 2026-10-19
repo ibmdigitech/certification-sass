@@ -37,51 +37,51 @@ export async function GET(request: NextRequest) {
       // Approval: Pending location accreditation
       pendingAccreditation,
     ] = await Promise.all([
-      prisma.traineeDocument.count({
+      (prisma as any).traineeDocument.count({
         where: {
           companyId,
           status: { in: ['expired', 'rejected'] },
         },
       }),
-      prisma.certificate.count({
+      (prisma as any).certificate.count({
         where: {
           companyId,
           expiryDate: { gte: now, lt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) },
           status: { notIn: ['REVOKED', 'EXPIRED'] },
         },
       }),
-      prisma.enrollment.count({
+      (prisma as any).enrollment.count({
         where: {
           companyId,
           status: 'active',
           startedAt: null,
         },
       }),
-      prisma.traineeDocument.count({
+      (prisma as any).traineeDocument.count({
         where: {
           companyId,
           status: 'rejected',
         },
       }),
-      prisma.inspectionReport.count({
+      (prisma as any).inspectionReport.count({
         where: {
           companyId,
           status: 'rejected',
         },
       }),
-      prisma.certificate.count({
+      (prisma as any).certificate.count({
         where: {
           companyId,
           status: 'REVOKED',
         },
       }),
-      prisma.certificate.count({
+      (prisma as any).certificate.count({
         where: {
           companyId,
           status: 'ISSUED',
         },
       }),
-      prisma.inspectionReport.count({
+      (prisma as any).inspectionReport.count({
         where: {
           companyId,
           status: 'approved',
@@ -93,13 +93,13 @@ export async function GET(request: NextRequest) {
           status: 'PENDING_APPROVAL',
         },
       }),
-      prisma.inspectionReport.count({
+      (prisma as any).inspectionReport.count({
         where: {
           companyId,
           status: { in: ['submitted', 'under_review'] },
         },
       }),
-      prisma.locationAccreditation.count({
+      (prisma as any).locationAccreditation.count({
         where: {
           companyId,
           status: 'PENDING_VERIFICATION',

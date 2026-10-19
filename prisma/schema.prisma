@@ -31,7 +31,8 @@ model Company {
   revisions                  Revision[]
   payments                   Payment[]
   invoices                   Invoice[]
-  deliveryLogs               DeliveryLog[]
+   deliveryLogs               DeliveryLog[]
+   deliveryNotes              DeliveryNote[]
   auditLogs                  AuditLog[]
   authSessions               AuthSession[]
   traineeDocuments           TraineeDocument[]
@@ -74,6 +75,9 @@ model Company {
   generalDefinitions         GeneralDefinition[]
   notificationSettings       NotificationSetting[]
   subcontractors             Subcontractor[]
+  certificateValidityRules   CertificateValidityRule[]
+  checklistItems             ChecklistItem[]
+  checklistItemResults       ChecklistItemResult[]
   createdAt                  DateTime               @default(now())
   updatedAt                  DateTime               @updatedAt
 }
@@ -165,6 +169,7 @@ model User {
   approverCertificates        Certificate[]               @relation("Approver")
   creatorCertificates         Certificate[]               @relation("Creator")
   createdCertificateTemplates CertificateTemplate[]       @relation("CreatedBy")
+  deliveryLogs                DeliveryLog[]
   salesInquiries              SalesInquiry[]              @relation("InquirySalesPerson")
   salesQuotations             SalesQuotation[]            @relation("QuotationSalesPerson")
   createdAt                   DateTime                    @default(now())
@@ -634,6 +639,17 @@ model Certificate {
   revisions                  Revision[]
   deliveryLogs               DeliveryLog[]
   verifications              CertificateVerification[]
+  // Training certificate ID fields
+  emiratesId                 String?
+  passportNumber             String?
+  visaNumber                 String?
+  licenseNumber              String?
+  idTypeUsed                 IdTypeUsed?
+  photoUrl                   String?
+  // Renewal
+  renewedFromId              Int?
+  renewedFrom                Certificate?              @relation("CertificateRenewal", fields: [renewedFromId], references: [id])
+  renewals                   Certificate[]             @relation("CertificateRenewal")
   createdAt                  DateTime                  @default(now())
   updatedAt                  DateTime                  @updatedAt
 
@@ -643,6 +659,27 @@ model Certificate {
   @@index([companyId, certificateType])
   @@index([companyId, expiryDate(sort: Desc)])
   @@index([jobServiceId])
+  @@index([renewedFromId])
+}
+
+model CertificateValidityRule {
+  id              Int      @id @default(autoincrement())
+  companyId       Int
+  company         Company  @relation(fields: [companyId], references: [id])
+  name            String
+  description     String?
+  certificateType String   // TRAINING, INSPECTION
+  equipmentCategory String? // FORKLIFT, CRANE, EXCAVATOR, SCAFFOLD, etc.
+  equipmentType   String?  // Specific type within category
+  validityMonths  Int      // Validity in months
+  isActive        Boolean  @default(true)
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([companyId, certificateType])
+  @@index([companyId, equipmentCategory])
+  @@unique([companyId, name])
 }
 
 model CertificateTemplate {
@@ -668,6 +705,7 @@ model ChecklistTemplate {
   id               Int                 @id @default(autoincrement())
   companyId        Int
   company          Company             @relation(fields: [companyId], references: [id])
+  name             String
   certificateType  String
   equipmentType    String?
   checklistType    ChecklistType       @default(NORMAL)
@@ -676,9 +714,9 @@ model ChecklistTemplate {
   parentTemplateId Int?
   parentTemplate   ChecklistTemplate?  @relation("ChecklistVersion", fields: [parentTemplateId], references: [id])
   childTemplates   ChecklistTemplate[] @relation("ChecklistVersion")
+  items            ChecklistItem[]
   effectiveDate    DateTime?
   status           ChecklistStatus     @default(DRAFT)
-  items            Json
   results          ChecklistResult[]
   equipmentNormal  Equipment[]         @relation("EquipmentNormalChecklist")
   equipmentFull    Equipment[]         @relation("EquipmentFullChecklist")
@@ -686,8 +724,55 @@ model ChecklistTemplate {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
+  @@unique([companyId, name])
   @@index([companyId, certificateType, equipmentType, checklistType])
   @@index([parentTemplateId])
+}
+
+enum ChecklistItemStatus {
+  PASS
+  FAIL
+  NA
+  CF  // Critical Failure - unsafe to use
+}
+
+model ChecklistItem {
+  id              Int      @id @default(autoincrement())
+  companyId       Int
+  company         Company  @relation(fields: [companyId], references: [id])
+  templateId      Int
+  template        ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  section         String?
+  itemNumber      String
+  description     String
+  isRequired      Boolean  @default(false)
+  referenceStd    String?  // Reference to standard/code
+  order           Int      @default(0)
+  itemResults     ChecklistItemResult[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([templateId, order])
+}
+
+model ChecklistItemResult {
+  id              Int                @id @default(autoincrement())
+  companyId       Int
+  company         Company            @relation(fields: [companyId], references: [id])
+  resultId        Int
+  result          ChecklistResult    @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  itemId          Int
+  item            ChecklistItem      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  status          ChecklistItemStatus @default(NA)
+  remarks         String?
+  photos          String[]
+  measurements    Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@unique([resultId, itemId])
+  @@index([resultId])
+  @@index([itemId])
 }
 
 model ChecklistResult {
@@ -708,6 +793,7 @@ model ChecklistResult {
   photos        String[]
   verifiedBy    Int?
   user          User?             @relation(fields: [verifiedBy], references: [id])
+  itemResults   ChecklistItemResult[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
@@ -762,11 +848,32 @@ model DeliveryLog {
   company       Company     @relation(fields: [companyId], references: [id])
   certificateId Int
   certificate   Certificate @relation(fields: [certificateId], references: [id])
+  userId        Int?
+  user          User?       @relation(fields: [userId], references: [id])
   deliveryDate  DateTime?
   method        String?
   status        String?
+  notes         String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+
+  deliveryNotes DeliveryNote[]
+}
+
+model DeliveryNote {
+  id            Int        @id @default(autoincrement())
+  companyId     Int
+  company       Company    @relation(fields: [companyId], references: [id])
+  deliveryLogId Int
+  deliveryLog   DeliveryLog @relation(fields: [deliveryLogId], references: [id])
+  noteNumber    String     @unique
+  title         String?
+  description   String?
+  notes         String?
+  status        String?    @default("PENDING")
+  deliveredAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model AuthSession {
@@ -794,6 +901,10 @@ model Trainee {
   companyName        String?
   jobTitle           String?
   emiratesId         String?
+  passportNumber     String?
+  visaNumber         String?
+  licenseNumber      String?
+  idTypeUsed         IdTypeUsed?         @default(EMIRATES_ID)
   nationality        String?
   dateOfBirth        DateTime?
   photoUrl           String?
@@ -816,6 +927,13 @@ model Trainee {
   @@unique([emiratesId, companyId])
   @@index([companyId, status])
   @@index([companyId, locationId])
+}
+
+enum IdTypeUsed {
+  EMIRATES_ID
+  PASSPORT
+  VISA
+  LICENSE
 }
 
 model TraineeDocument {

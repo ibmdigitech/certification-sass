@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { JobServiceType } from '@prisma/client';
+import { JobNumberService } from '@/lib/services/job-number.service';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -68,9 +68,8 @@ export async function POST(request: NextRequest) {
           return existingJob;
         }
 
-        const count = await tx.job.count({ where: { companyId: q.companyId } });
-        const jobNumber = `TSC-${new Date().getFullYear()}-${String(count + 1).padStart(5, '0')}`;
         const primarySiteId = q.customer?.sites?.[0]?.id ?? null;
+        const jobNumber = await JobNumberService.generateJobNumber(q.companyId, tx);
 
         const newJob = await tx.job.create({
           data: {
@@ -85,7 +84,7 @@ export async function POST(request: NextRequest) {
             jobServices: {
               create: q.items.map((item: any) => ({
                 companyId: q.companyId,
-                serviceType: item.serviceType === 'TRAINING' ? JobServiceType.TRAINING : JobServiceType.INSPECTION,
+                serviceType: item.serviceType === 'TRAINING' ? 'TRAINING' : 'INSPECTION',
                 serviceCode: item.serviceType === 'TRAINING' ? 'TRN-SRV' : 'INS-SRV',
                 description: item.description,
                 status: 'PLANNED',

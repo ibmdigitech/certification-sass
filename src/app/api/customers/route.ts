@@ -2,9 +2,6 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import type { Prisma } from '@prisma/client';
-
-type CustomerWhereInput = Prisma.CustomerWhereInput;
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +16,7 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, Number(searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || '50')));
 
-    const whereClause: CustomerWhereInput = { companyId };
+    const whereClause: Record<string, any> = { companyId };
     if (status && status !== 'all') {
       whereClause.status = status;
     }
@@ -35,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [customers, total] = await Promise.all([
-      prisma.customer.findMany({
+      (prisma as any).customer.findMany({
         where: whereClause,
         include: {
           sites: { select: { id: true, name: true, emirate: true } },
@@ -51,7 +48,7 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
       }),
-      prisma.customer.count({ where: whereClause }),
+      (prisma as any).customer.count({ where: whereClause }),
     ]);
 
     return NextResponse.json({
@@ -85,7 +82,7 @@ export async function POST(request: NextRequest) {
     const customerName = (name || contact || '').toString().trim();
 
     // Duplicate detection: same company must not have an active customer with the same name, code, email, or TRN
-    const existing = await prisma.customer.findFirst({
+    const existing = await (prisma as any).customer.findFirst({
       where: {
         companyId,
         OR: [
@@ -93,8 +90,8 @@ export async function POST(request: NextRequest) {
           code ? { code: { equals: code, mode: 'insensitive' } } : undefined,
           email ? { email: { equals: email, mode: 'insensitive' } } : undefined,
           trnNumber ? { trnNumber: { equals: trnNumber, mode: 'insensitive' } } : undefined,
-        ].filter(Boolean) as Prisma.CustomerWhereInput['OR'],
-      } as CustomerWhereInput,
+        ].filter(Boolean) as any,
+      } as any,
       select: { id: true, name: true, code: true, status: true },
     });
 
@@ -108,7 +105,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newCustomer = await prisma.customer.create({
+    const newCustomer = await (prisma as any).customer.create({
       data: {
         companyId,
         name: customerName,
@@ -135,7 +132,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await prisma.auditLog.create({
+    await (prisma as any).auditLog.create({
       data: {
         companyId,
         userId: Number(session.user.id) || 0,
@@ -143,7 +140,7 @@ export async function POST(request: NextRequest) {
         entityType: 'Customer',
         entityId: newCustomer.id,
         tenantId: companyId,
-        newValue: { name: newCustomer.name, code: newCustomer.code } as Prisma.InputJsonValue,
+        newValue: { name: newCustomer.name, code: newCustomer.code } as any,
       },
     });
 
@@ -168,7 +165,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Customer id is required' }, { status: 400 });
     }
 
-    const existing = await prisma.customer.findFirst({
+    const existing = await (prisma as any).customer.findFirst({
       where: { id: Number(id), companyId },
       select: { id: true },
     });
@@ -176,7 +173,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
-    const updated = await prisma.customer.update({
+    const updated = await (prisma as any).customer.update({
       where: { id: Number(id), companyId },
       data: {
         name: data.name,
@@ -195,7 +192,7 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    await prisma.auditLog.create({
+    await (prisma as any).auditLog.create({
       data: {
         companyId,
         userId: Number(session.user.id) || 0,
@@ -203,7 +200,7 @@ export async function PATCH(request: NextRequest) {
         entityType: 'Customer',
         entityId: updated.id,
         tenantId: companyId,
-        newValue: { name: updated.name, code: updated.code, status: updated.status } as Prisma.InputJsonValue,
+        newValue: { name: updated.name, code: updated.code, status: updated.status } as any,
       },
     });
 

@@ -279,14 +279,25 @@ export class InspectionReportService {
   }
 
   static async approveReport(id: number, companyId: number, approvedBy: number) {
-    return prisma.inspectionReport.update({
+    const report = await prisma.inspectionReport.update({
       where: { id, companyId },
       data: {
         status: 'approved',
         approvedBy,
       },
-      include: { approver: true },
+      include: { 
+        approver: true,
+        inspection: { include: { inspector: true } },
+        job: { include: { customer: true, location: true } },
+      },
     });
+
+    // NOTE: Certificate generation is NOT automatic on report approval.
+    // It requires explicit generation via POST /api/inspections/certificates/generate
+    // which validates the full job/scheduling workflow first.
+    // This prevents certificates being issued without proper job creation and scheduling.
+
+    return report;
   }
 
   static async rejectReport(id: number, companyId: number, reviewedBy: number) {

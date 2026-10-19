@@ -79,28 +79,28 @@ export async function GET(
     }
 
     const [courses, users, locations, trainees, trainerRecords] = await Promise.all([
-      prisma.trainingCourse.findMany({
+      (prisma as any).trainingCourse.findMany({
         where: { companyId, status: { in: ['PUBLISHED', 'ACTIVE'] } },
         select: { id: true, code: true, title: true, trainingHours: true, locationId: true, accreditationId: true },
         orderBy: { title: 'asc' },
       }),
-      prisma.user.findMany({
+      (prisma as any).user.findMany({
         where: { companyId, status: 'active' },
         select: { id: true, name: true, email: true, role: true },
         orderBy: { name: 'asc' },
       }),
-      prisma.location.findMany({
+      (prisma as any).location.findMany({
         where: { companyId },
         select: { id: true, code: true, name: true, emirate: true },
         orderBy: { name: 'asc' },
       }),
-      prisma.trainee.findMany({
+      (prisma as any).trainee.findMany({
         where: { companyId },
         select: { id: true, firstName: true, lastName: true, emiratesId: true, companyName: true },
         orderBy: { firstName: 'asc' },
         take: 100,
       }),
-      prisma.trainer.findMany({
+      (prisma as any).trainer.findMany({
         where: { companyId, status: 'ACTIVE' },
         include: {
           user: { select: { id: true, name: true, email: true } },
@@ -160,7 +160,7 @@ export async function POST(
     let result: any;
     let conflict: any;
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await prisma.$transaction(async (tx: any) => {
       const js = body.jobServiceId
         ? await tx.jobService.findFirst({ where: { id: body.jobServiceId, jobId, companyId } })
         : await tx.jobService.findFirst({

@@ -17,6 +17,7 @@ export interface TrainingCertificateInput {
   trainerSignature: string;
   companyStamp: string;
   footerDisclaimer?: string;
+  companyName?: string;
 }
 
 export interface TrainingCertificateLayout {
@@ -55,10 +56,10 @@ export class TrainingCertificateGenerator {
   static readonly COMPANY_NAME = 'IBMDIGITECH';
   static readonly TEMPLATE_NAME = 'IBMDIGITECH Training Certificate';
   static readonly TEMPLATE_DESCRIPTION = 'Standardized training certificate with company logo, certificate number, and footer disclaimer';
-  static readonly DEFAULT_FOOTER_DISCLAIMER = 'This certificate is issued by IBMDIGITECH. All rights reserved.';
+  static readonly DEFAULT_FOOTER_DISCLAIMER = 'This certificate is issued by this organization. All rights reserved.';
 
   static readonly DEFAULT_LAYOUT: TrainingCertificateLayout = {
-    companyName: TrainingCertificateGenerator.COMPANY_NAME,
+    companyName: 'Company',
     companyLogo: '',
     showLogo: true,
     showCertificateNumber: true,
@@ -88,7 +89,7 @@ export class TrainingCertificateGenerator {
       company_stamp: data.companyStamp,
       footer_disclaimer: data.footerDisclaimer ?? TrainingCertificateGenerator.DEFAULT_FOOTER_DISCLAIMER,
       layout: {
-        companyName: TrainingCertificateGenerator.COMPANY_NAME,
+        companyName: data.companyName ?? 'Company',
         companyLogo: data.companyLogo,
         showLogo: true,
         showCertificateNumber: true,

@@ -116,6 +116,11 @@ export class CertificateService {
           job: {
             include: { customer: true },
           },
+          deliveryLogs: {
+            where: { companyId },
+            orderBy: { createdAt: 'desc' },
+            take: 3,
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,

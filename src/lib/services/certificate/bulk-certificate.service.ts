@@ -40,6 +40,7 @@ export interface CertificateLifecycleAction {
   action: 'issue' | 'revoke' | 'expire' | 'renew' | 'reissue' | 'archive';
   reason?: string;
   performedBy: string;
+  userId?: number;
   newExpiryDate?: Date;
 }
 
@@ -209,7 +210,7 @@ export class BulkCertificateService {
   }
 
   static async performLifecycleAction(action: CertificateLifecycleAction): Promise<CertificateLifecycleResult> {
-    const { certificateId, action: actionType, reason, performedBy, newExpiryDate } = action;
+    const { certificateId, action: actionType, reason, performedBy, userId, newExpiryDate } = action;
 
     const certificate = await prisma.certificate.findUnique({
       where: { id: certificateId },
@@ -254,11 +255,13 @@ export class BulkCertificateService {
     await prisma.auditLog.create({
       data: {
         companyId: certificate.companyId,
-        userId: 0,
+        userId: userId ?? 0,
         action: `certificate_${actionType}`,
         entityType: 'certificate',
         entityId: certificateId,
         tenantId: certificate.companyId,
+        previousValue: { status: previousStatus },
+        newValue: { status: newStatus },
       },
     });
 

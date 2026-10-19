@@ -1,9 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Printer, Download, Package, FileText, CheckCircle, AlertTriangle, XCircle, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { format } from "date-fns";
+
+interface Certificate {
+  id: number;
+  number: string;
+  status: string;
+  certificateType: string | null;
+  holderName: string | null;
+  pdfUrl: string | null;
+  qrUrl: string | null;
+  jobNumber: string | null;
+  createdAt: string;
+}
 
 interface PrintJob {
   id: string;
@@ -13,11 +27,37 @@ interface PrintJob {
   progress: number;
   error?: string;
   createdAt: Date;
+  certificateId?: number;
 }
 
 export function PrintCenter() {
   const [printJobs, setPrintJobs] = useState<PrintJob[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loadingCerts, setLoadingCerts] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  // Fetch certificates on mount
+  useEffect(() => {
+    fetchCertificates();
+  }, []);
+
+  const fetchCertificates = async () => {
+    setLoadingCerts(true);
+    try {
+      const params = new URLSearchParams();
+      params.append("limit", "100");
+      const res = await fetch(`/api/certificates?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCertificates(data.certificates || data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch certificates:", error);
+    } finally {
+      setLoadingCerts(false);
+    }
+  };
 
   // Simulated queue stats
   const stats = {
@@ -38,6 +78,19 @@ export function PrintCenter() {
       createdAt: new Date(),
     }));
     setPrintJobs(prev => [...prev, ...demoJobs]);
+  };
+
+  const addCertificateJobs = () => {
+    const certJobs: PrintJob[] = certificates.map(cert => ({
+      id: `cert-${cert.id}`,
+      type: 'CERTIFICATE' as const,
+      jobNumber: cert.number,
+      status: 'QUEUED' as const,
+      progress: 0,
+      createdAt: new Date(),
+      certificateId: cert.id,
+    }));
+    setPrintJobs(prev => [...prev, ...certJobs]);
   };
 
   const processQueue = async () => {
@@ -73,6 +126,105 @@ export function PrintCenter() {
 
   const retryFailed = () => {
     setPrintJobs(prev => prev.map(j => j.status === 'FAILED' ? { ...j, status: 'QUEUED' as const, progress: 0, error: undefined } : j));
+  };
+
+  const downloadCertificate = async (certificateId: number) => {
+    try {
+      const cert = certificates.find(c => c.id === certificateId);
+      if (!cert || !cert.pdfUrl) {
+        alert("PDF not available for this certificate");
+        return;
+      }
+
+      // Record print event
+      const printResponse = await fetch(`/api/certificates/${certificateId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordPrint: true }),
+      });
+      
+      if (!printResponse.ok) {
+        console.warn("Failed to record print event:", await printResponse.text());
+      }
+
+      // Download the PDF - handle large base64 data URLs
+      const pdfUrl = cert.pdfUrl;
+      let blob: Blob;
+      
+      if (pdfUrl.startsWith('data:application/pdf;base64,')) {
+        // Handle base64 data URL - convert to blob directly to avoid fetch issues with large data URLs
+        const base64Data = pdfUrl.split(',')[1];
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        blob = new Blob([byteArray], { type: 'application/pdf' });
+      } else {
+        // Regular URL - fetch normally
+        const response = await fetch(pdfUrl);
+        if (!response.ok) throw new Error("Failed to fetch PDF");
+        blob = await response.blob();
+      }
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${cert.number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Failed to download certificate:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`Failed to download certificate: ${errorMessage}`);
+    }
+  };
+
+  const downloadAllCompleted = async () => {
+    const completedJobs = printJobs.filter(j => j.status === 'COMPLETED' && j.certificateId);
+    for (const job of completedJobs) {
+      await downloadCertificate(job.certificateId!);
+      // Small delay between downloads
+      await new Promise(r => setTimeout(r, 100));
+    }
+  };
+
+  const createDeliveryNote = async (certificateId: number) => {
+    const cert = certificates.find(c => c.id === certificateId);
+    if (!cert) return;
+
+    const confirmed = confirm(
+      `Create delivery note for certificate ${cert.number}?\n\nThis will generate a delivery note for this certificate.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch('/api/certificates/delivery-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          certificateId,
+          title: `Delivery Note for Certificate ${cert.number}`,
+          description: `Certificate ${cert.number} (${cert.certificateType || 'N/A'}) - issued on ${format(new Date(cert.createdAt), 'PP')}`,
+          notes: '',
+          deliveryMethod: 'courier',
+        }),
+      });
+
+      if (res.ok) {
+        const note = await res.json();
+        alert(`Delivery note ${note.noteNumber} created successfully!`);
+      } else {
+        const error = await res.json();
+        alert(`Failed to create delivery note: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Failed to create delivery note:', error);
+      alert('Failed to create delivery note');
+    }
   };
 
   const typeIcon = (type: string) => {
@@ -116,7 +268,10 @@ export function PrintCenter() {
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
         <Button onClick={addDemoJobs} variant="outline" className="flex items-center gap-2">
-          <Printer className="w-4 h-4" /> Add Print Jobs
+          <Printer className="w-4 h-4" /> Add Demo Jobs
+        </Button>
+        <Button onClick={addCertificateJobs} variant="outline" disabled={loadingCerts || certificates.length === 0} className="flex items-center gap-2">
+          <FileText className="w-4 h-4" /> Add Certificates ({certificates.length})
         </Button>
         <Button onClick={processQueue} disabled={isGenerating || stats.queued === 0} className="flex items-center gap-2">
           {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
@@ -128,7 +283,7 @@ export function PrintCenter() {
           </Button>
         )}
         {stats.completed > 0 && (
-          <Button variant="outline" className="flex items-center gap-2 text-green-600 border-green-200">
+          <Button onClick={downloadAllCompleted} disabled={isGenerating} variant="outline" className="flex items-center gap-2 text-green-600 border-green-200">
             <Download className="w-4 h-4" /> Download All ({stats.completed})
           </Button>
         )}
@@ -174,8 +329,13 @@ export function PrintCenter() {
                       {job.error}
                     </span>
                   )}
-                  {job.status === 'COMPLETED' && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                  {job.status === 'COMPLETED' && job.certificateId && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={() => downloadCertificate(job.certificateId!)}
+                    >
                       <Download className="w-4 h-4" />
                     </Button>
                   )}
@@ -192,6 +352,61 @@ export function PrintCenter() {
           <p>No print jobs in the queue</p>
           <p className="text-sm mt-1">Add certificates, timesheets, or reports to start printing.</p>
         </div>
+      )}
+
+      {/* Individual Certificate Actions */}
+      {certificates.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Certificates - Individual Actions</CardTitle>
+            <CardDescription>Download PDFs, QR codes, create delivery notes per certificate</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="max-h-[400px] overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2">Number</th>
+                    <th className="text-left py-2">Type</th>
+                    <th className="text-left py-2">Job</th>
+                    <th className="text-left py-2">Status</th>
+                    <th className="text-right py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {certificates.map((cert) => (
+                    <tr key={cert.id} className="border-b">
+                      <td className="font-mono py-2">{cert.number}</td>
+                      <td className="py-2">{cert.certificateType || '—'}</td>
+                      <td className="py-2">{cert.jobNumber || '—'}</td>
+                      <td className="py-2">{cert.status}</td>
+                      <td className="py-2 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => downloadCertificate(cert.id)}
+                            disabled={!cert.pdfUrl}
+                          >
+                            <Download className="w-3 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => createDeliveryNote(cert.id)}
+                          >
+                            <FileText className="w-3 h-4" />
+                            DN
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

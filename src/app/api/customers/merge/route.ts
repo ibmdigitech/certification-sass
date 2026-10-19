@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot merge a customer into itself' }, { status: 400 });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const src = await tx.customer.findUnique({
         where: { id: Number(sourceCustomerId) },
         include: { _count: { select: { sites: true, assets: true, jobs: true } } },

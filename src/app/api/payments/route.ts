@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
 
     const [payments, invoices] = await Promise.all([
-      prisma.payment.findMany({
+      (prisma as any).payment.findMany({
         where,
         include: {
           job: {
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.invoice.findMany({
+      (prisma as any).invoice.findMany({
         where: { companyId },
         include: {
           payment: {
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
-    const payment = await prisma.$transaction(async (tx) => {
+    const payment = await prisma.$transaction(async (tx: any) => {
       const p = await tx.payment.create({
         data: {
           companyId,
@@ -103,9 +103,9 @@ export async function POST(request: NextRequest) {
 
       // Optionally auto-generate invoice
       if (body.createInvoice !== false) {
-        const invoiceCount = await tx.invoice.count({ where: { companyId } });
+        const invoiceCount = await (tx as any).invoice.count({ where: { companyId } });
         const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount + 1).padStart(4, '0')}`;
-        await tx.invoice.create({
+        await (tx as any).invoice.create({
           data: {
             companyId,
             paymentId: p.id,

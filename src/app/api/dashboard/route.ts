@@ -32,22 +32,24 @@ export async function GET(request: NextRequest) {
       approvedQuotations,
       rejectionReportsCount,
       reportsNeedCertificateCount,
-      failureReportsNeedsApprovalCount,
-      failureApprovedReportsCount,
-      usersWithInspections,
+       failureReportsNeedsApprovalCount,
+       failureApprovedReportsCount,
+       usersWithInspections,
+       certificatesWithRevisions,
+       usersWhoRevised,
     ] = await Promise.all([
-      prisma.trainee.count({ where: { companyId } }),
-      prisma.trainingCourse.count({ where: { companyId, status: 'PUBLISHED' } }),
-      prisma.trainingCourse.count({ where: { companyId, status: 'PENDING_VERIFICATION' } }),
-      prisma.trainingSession.count({
+      (prisma as any).trainee.count({ where: { companyId } }),
+      (prisma as any).trainingCourse.count({ where: { companyId, status: 'PUBLISHED' } }),
+      (prisma as any).trainingCourse.count({ where: { companyId, status: 'PENDING_VERIFICATION' } }),
+      (prisma as any).trainingSession.count({
         where: {
           companyId,
           startDate: { gte: now },
           status: { in: ['SCHEDULED', 'PLANNED'] },
         },
       }),
-      prisma.competency.count({ where: { companyId } }),
-      prisma.enrollment.findMany({
+      (prisma as any).competency.count({ where: { companyId } }),
+      (prisma as any).enrollment.findMany({
         where: { companyId, status: 'in_progress' },
         orderBy: { startedAt: 'desc' },
         take: 5,
@@ -61,7 +63,7 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.certificate.findMany({
+      (prisma as any).certificate.findMany({
         where: {
           companyId,
           expiryDate: { gte: now, lt: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000) },
@@ -72,23 +74,60 @@ export async function GET(request: NextRequest) {
           course: { select: { title: true } },
         },
       }),
-      prisma.trainingSession.count({
+      (prisma as any).trainingSession.count({
         where: { companyId, status: 'COMPLETED', endDate: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } },
       }),
-      prisma.certificate.count({ where: { companyId } }),
-      prisma.job.count({ where: { companyId, status: { in: ['PLANNED', 'IN_PROGRESS'] } } }),
-      prisma.job.count({ where: { companyId, status: 'COMPLETED', updatedAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } } }),
-      prisma.job.count({ where: { companyId } }),
-      prisma.deliveryLog.count({ where: { companyId } }),
-      prisma.customer.count({ where: { companyId } }),
-      prisma.salesInquiry?.count({ where: { companyId } }).catch(() => 0) ?? 0,
-      prisma.salesQuotation?.count({ where: { companyId } }).catch(() => 0) ?? 0,
-      prisma.salesQuotation?.count({ where: { companyId, status: 'APPROVED' } }).catch(() => 0) ?? 0,
-      prisma.inspection.count({ where: { companyId, result: 'FAILED' } }).catch(() => 0),
-      prisma.inspection.count({ where: { companyId, result: 'PASSED', Certificate: { none: {} } } }).catch(() => 0),
-      prisma.inspection.count({ where: { companyId, approvalStatus: 'PENDING' } }).catch(() => 0),
-      prisma.inspection.count({ where: { companyId, result: 'FAILED', approvalStatus: 'APPROVED' } }).catch(() => 0),
-      prisma.user.findMany({
+      (prisma as any).certificate.count({ where: { companyId } }),
+      (prisma as any).job.count({ where: { companyId, status: { in: ['PLANNED', 'IN_PROGRESS'] } } }),
+      (prisma as any).job.count({ where: { companyId, status: 'COMPLETED', updatedAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } } }),
+      (prisma as any).job.count({ where: { companyId } }),
+      (prisma as any).deliveryLog.count({ where: { companyId } }),
+      (prisma as any).customer.count({ where: { companyId } }),
+      (prisma as any).salesInquiry?.count({ where: { companyId } }).catch(() => 0) ?? 0,
+      (prisma as any).salesQuotation?.count({ where: { companyId } }).catch(() => 0) ?? 0,
+      (prisma as any).salesQuotation?.count({ where: { companyId, status: 'APPROVED' } }).catch(() => 0) ?? 0,
+(prisma as any).inspection.count({ where: { companyId, result: 'FAILED' } }).catch(() => 0),
+      (prisma as any).inspection.count({ where: { companyId, result: 'PASSED', Certificate: { none: {} } } }).catch(() => 0),
+      (prisma as any).inspection.count({ where: { companyId, approvalStatus: 'PENDING' } }).catch(() => 0),
+      (prisma as any).inspection.count({ where: { companyId, result: 'FAILED', approvalStatus: 'APPROVED' } }).catch(() => 0),
+      (prisma as any).certificate.findMany({
+        where: { companyId, revisions: { some: {} } },
+        include: {
+          job: { select: { jobNumber: true } },
+          creator: { select: { name: true, id: true } },
+          approver: { select: { name: true, id: true } },
+          revisions: {
+            include: {
+              user: { select: { name: true, id: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 3,
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 20,
+      }),
+      (prisma as any).user.findMany({
+        where: {
+          companyId,
+          role: { in: ['CERTIFICATE_TEAM', 'ENGINEER', 'ADMIN'] },
+        },
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: {
+              revisions: true,
+              createdCertificates: true,
+            },
+          },
+        },
+        orderBy: {
+          revisions: { _count: 'desc' },
+        },
+        take: 10,
+      }),
+      (prisma as any).user.findMany({
         where: { companyId, role: { in: ['INSPECTOR', 'ENGINEER', 'ADMIN'] } },
         select: {
           id: true,
@@ -127,6 +166,28 @@ export async function GET(request: NextRequest) {
       certificateNumber: c.number,
       expiresAt: (c.expiryDate ?? new Date()).toISOString(),
       daysRemaining: c.expiryDate ? Math.ceil((c.expiryDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) : 0,
+    }));
+
+    const revisedCertificates = certificatesWithRevisions.map((c: any) => ({
+      id: c.id,
+      number: c.number,
+      revision: c.revision,
+      jobNumber: c.job?.jobNumber,
+      createdAt: c.createdAt.toISOString(),
+      updatedAt: c.updatedAt.toISOString(),
+      createdByName: c.creator?.name,
+      createdById: c.creator?.id,
+      approvedByName: c.approver?.name,
+      approvedById: c.approver?.id,
+      revisions: c.revisions.map((r: any) => r.user?.name || 'Unknown'),
+      rootCauses: c.revisions.map((r: any) => r.rootCause || 'N/A'),
+    }));
+
+    const certificateTeamPerformance = usersWhoRevised.map((u: any) => ({
+      id: u.id,
+      name: u.name,
+      revisionCount: u._count?.revisions || 0,
+      createdCount: u._count?.createdCertificates || 0,
     }));
 
     // Inspector performance bars for DC summary
@@ -189,6 +250,8 @@ export async function GET(request: NextRequest) {
       },
       recentActivity,
       expiringCertificates: expiringCerts,
+      revisedCertificates,
+      certificateTeamPerformance,
     });
   } catch (error) {
     console.error('Dashboard error:', error);

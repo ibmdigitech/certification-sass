@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { CertificateManager } from '@/lib/services/certificate/certificate-manager';
 import { CertificateService } from '@/lib/services/certificate.service';
 import { PDFGenerationService } from '@/lib/services/certificate/pdf-generation.service';
@@ -52,13 +53,55 @@ export async function PUT(
     }
     const companyId = session.user.companyId;
     const performedBy = session.user.name || session.user.email || 'System';
+    const userId = parseInt(session.user.id, 10);
     const { id } = await params;
     const certificateId = parseInt(id);
     const body = await request.json();
-    const { action, reason, newExpiryDate } = body;
+    const { action, reason, newExpiryDate, recordPrint, generateQr } = body;
 
     if (isNaN(certificateId)) {
       return NextResponse.json({ error: 'Invalid certificate ID' }, { status: 400 });
+    }
+
+    // Handle QR code auto-generation
+    if (generateQr) {
+      const certificate = await (prisma as any).certificate.findFirst({
+        where: { id: certificateId, companyId },
+        select: { id: true, qrUrl: true, number: true },
+      });
+
+      if (!certificate) {
+        return NextResponse.json({ error: 'Certificate not found' }, { status: 404 });
+      }
+
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+
+      // Auto-generate QR if not present
+      if (!certificate.qrUrl) {
+        const result = await QRCodeService.generateAndSaveQRCode(certificateId, baseUrl);
+        return NextResponse.json({ success: true, qrUrl: result.dataUrl });
+      }
+
+      return NextResponse.json({ success: true, qrUrl: certificate.qrUrl });
+    }
+
+    // Handle print/download recording
+    if (recordPrint) {
+      if (isNaN(userId)) {
+        return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
+      }
+      const { prisma } = await import('@/lib/prisma');
+      await (prisma as any).deliveryLog.create({
+        data: {
+          companyId,
+          certificateId,
+          userId,
+          deliveryDate: new Date(),
+          method: 'DOWNLOAD',
+          status: 'PRINTED',
+        },
+      });
+      return NextResponse.json({ success: true });
     }
 
     const validActions = ['issue', 'revoke', 'expire', 'renew', 'reissue', 'archive'];
@@ -72,6 +115,7 @@ export async function PUT(
       action,
       reason,
       performedBy,
+      userId,
       newExpiryDate: newExpiryDate ? new Date(newExpiryDate) : undefined,
     });
 

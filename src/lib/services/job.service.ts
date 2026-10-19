@@ -23,6 +23,7 @@ export interface CreateJobInput {
   companyId: number;
   customerId: number;
   jobNumber?: string;
+  jobNumberPrefix?: string;
   locationId?: number;
   customerReference?: string;
   quotationId?: string;
@@ -135,7 +136,25 @@ export class JobService {
 
       let jobNumber = input.jobNumber;
       if (!jobNumber) {
-        jobNumber = await JobNumberService.generateJobNumber(input.companyId, tx);
+        if (input.jobNumberPrefix) {
+          const parsed = JobNumberService.parseJobNumber(input.jobNumberPrefix);
+          if (parsed) {
+            jobNumber = await JobNumberService.generateJobNumberFromSeed(
+              input.companyId,
+              parsed.prefix,
+              parsed.number,
+              tx
+            );
+          } else {
+            jobNumber = await JobNumberService.generateJobNumberWithPrefix(
+              input.companyId,
+              input.jobNumberPrefix,
+              tx
+            );
+          }
+        } else {
+          jobNumber = await JobNumberService.generateJobNumber(input.companyId, tx);
+        }
       } else {
         const isValid = await JobNumberService.validateJobNumber(jobNumber, input.companyId, tx);
         if (!isValid) {

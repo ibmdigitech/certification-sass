@@ -14,6 +14,7 @@ export * from './job-package.service';
 export * from './job.service';
 export * from './offline-sync.service';
 export * from './permission.service';
+export * from './quotation-pdf.service';
 export * from './qr-code.service';
 export * from './session.service';
 export * from './timesheet-pdf.service';

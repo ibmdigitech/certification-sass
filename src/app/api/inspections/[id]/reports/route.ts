@@ -46,7 +46,7 @@ export async function POST(
     }
 
     // Get inspection to find jobId
-    const inspection = await prisma.inspection.findFirst({
+    const inspection = await (prisma as any).inspection.findFirst({
       where: { id: inspectionId, companyId },
     });
 

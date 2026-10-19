@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       userId: Number(session.user.id),
       action: 'USER_CREATED',
       entityType: 'USER',
-      entityId: user.id,
+      entityId: Number(user.id),
       previousValue: null,
       newValue: user,
       reason: `Admin created user: ${user.name}`
