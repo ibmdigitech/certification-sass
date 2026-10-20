@@ -53,13 +53,13 @@ export interface TrainingCertificateJSON {
 }
 
 export class TrainingCertificateGenerator {
-  static readonly COMPANY_NAME = 'IBMDIGITECH';
-  static readonly TEMPLATE_NAME = 'IBMDIGITECH Training Certificate';
+  static readonly DEFAULT_COMPANY_NAME = 'Inspection & Certification Body';
+  static readonly DEFAULT_TEMPLATE_NAME = 'Standard Training Certificate';
   static readonly TEMPLATE_DESCRIPTION = 'Standardized training certificate with company logo, certificate number, and footer disclaimer';
   static readonly DEFAULT_FOOTER_DISCLAIMER = 'This certificate is issued by this organization. All rights reserved.';
 
   static readonly DEFAULT_LAYOUT: TrainingCertificateLayout = {
-    companyName: 'Company',
+    companyName: TrainingCertificateGenerator.DEFAULT_COMPANY_NAME,
     companyLogo: '',
     showLogo: true,
     showCertificateNumber: true,
@@ -663,6 +663,7 @@ ${footerHtml}
       validUntil: additionalData?.validUntil ?? '',
       approvedBy: additionalData?.approvedBy ?? '',
       footerDisclaimer: additionalData?.footerDisclaimer ?? TrainingCertificateGenerator.DEFAULT_FOOTER_DISCLAIMER,
+      companyName: additionalData?.companyName ?? trainee.company?.name ?? TrainingCertificateGenerator.DEFAULT_COMPANY_NAME,
     };
 
     return TrainingCertificateGenerator.generateJSON(input);

@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 
 export class JobNumberService {
@@ -20,38 +20,41 @@ export class JobNumberService {
     const db = txClient || prisma;
     const effectivePrefix = prefix || this.DEFAULT_PREFIX;
 
-    const lastJob = await db.job.findFirst({
-      where: {
-        companyId,
-        jobNumber: { startsWith: effectivePrefix },
-      },
-      orderBy: { id: 'desc' },
-      select: { jobNumber: true },
-    });
+    const maxRetries = 5;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const lastJob = await db.job.findFirst({
+        where: {
+          companyId,
+          jobNumber: { startsWith: effectivePrefix },
+        },
+        orderBy: { id: 'desc' },
+        select: { jobNumber: true },
+      });
 
-    let nextNumber = this.DEFAULT_START_NUMBER;
-    let padLength = 6;
+      let nextNumber = this.DEFAULT_START_NUMBER + attempt;
+      let padLength = 6;
 
-    if (lastJob?.jobNumber) {
-      const match = lastJob.jobNumber.match(/^([^-\s]+)-(\d+)$/);
-      if (match) {
-        const parsedNumber = parseInt(match[2], 10);
-        nextNumber = parsedNumber + 1;
-        padLength = Math.max(match[2].length, 6);
+      if (lastJob?.jobNumber) {
+        const match = lastJob.jobNumber.match(/^([^-\s]+)-(\d+)$/);
+        if (match) {
+          const parsedNumber = parseInt(match[2], 10);
+          nextNumber = parsedNumber + 1 + attempt;
+          padLength = Math.max(match[2].length, 6);
+        }
+      }
+
+      const jobNumber = `${effectivePrefix}${String(nextNumber).padStart(padLength, '0')}`;
+
+      const existing = await db.job.findUnique({
+        where: { jobNumber },
+      });
+
+      if (!existing) {
+        return jobNumber;
       }
     }
 
-    const jobNumber = `${effectivePrefix}${String(nextNumber).padStart(padLength, '0')}`;
-
-    const existing = await db.job.findUnique({
-      where: { jobNumber },
-    });
-
-    if (existing) {
-      throw new Error(`Job number ${jobNumber} already exists`);
-    }
-
-    return jobNumber;
+    throw new Error(`Failed to generate unique job number with prefix ${effectivePrefix} after ${maxRetries} concurrent attempts`);
   }
 
   static async generateJobNumberFromSeed(

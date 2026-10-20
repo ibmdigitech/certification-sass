@@ -71,6 +71,7 @@ export default function CustomersPage() {
   // Form states (create)
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [autoCodePreview, setAutoCodePreview] = useState("");
   const [contact, setContact] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -78,6 +79,20 @@ export default function CustomersPage() {
   const [creditTerms, setCreditTerms] = useState("30 Days");
   const [siteName, setSiteName] = useState("");
   const [emirate, setEmirate] = useState("Dubai");
+
+  // Fetch next customer code preview when opening dialog
+  useEffect(() => {
+    if (isDialogOpen) {
+      fetch("/api/customers?action=next-code")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.nextCode) {
+            setAutoCodePreview(data.nextCode);
+          }
+        })
+        .catch((err) => console.error("Failed to preview customer code:", err));
+    }
+  }, [isDialogOpen]);
 
   // Edit form state
   const [editingCustomer, setEditingCustomer] = useState<CustomerRecord | null>(null);

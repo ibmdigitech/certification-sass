@@ -16,10 +16,12 @@ model Company {
   users                      User[]
   customers                  Customer[]
   jobs                       Job[]
+  lpos                       LPO[]
   roles                      Role[]
   trainees                   Trainee[]
   documents                  Document[]
   timesheets                 Timesheet[]
+  timesheetEquipmentItems    TimesheetEquipmentItem[]
   certificateVerifications   CertificateVerification[]
   reschedules                Reschedule[]
   inspections                Inspection[]
@@ -31,8 +33,12 @@ model Company {
   revisions                  Revision[]
   payments                   Payment[]
   invoices                   Invoice[]
-   deliveryLogs               DeliveryLog[]
-   deliveryNotes              DeliveryNote[]
+  invoiceItems               InvoiceItem[]
+  creditNotes                CreditNote[]
+  paymentCollections         PaymentCollection[]
+  jobClosures                JobClosure[]
+  deliveryLogs               DeliveryLog[]
+  deliveryNotes              DeliveryNote[]
   auditLogs                  AuditLog[]
   authSessions               AuthSession[]
   traineeDocuments           TraineeDocument[]
@@ -53,6 +59,7 @@ model Company {
   locations                  Location[]
   accreditationAuthorities   AccreditationAuthority[]
   locationAccreditations     LocationAccreditation[]
+  siteAccessPasses           SiteAccessPass[]
   courseLocations            CourseLocation[]
   courseAccreditations       CourseAccreditation[]
   sessionEnrollments         SessionEnrollment[]
@@ -78,8 +85,12 @@ model Company {
   certificateValidityRules   CertificateValidityRule[]
   checklistItems             ChecklistItem[]
   checklistItemResults       ChecklistItemResult[]
-  createdAt                  DateTime               @default(now())
-  updatedAt                  DateTime               @updatedAt
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+  AccreditationApplication   AccreditationApplication[]
+  GrantedAccreditationScope  GrantedAccreditationScope[]
+  aiTransactionLogs          AITransactionLog[]
+  aiStagedOutputs            AIStagedOutput[]
 }
 
 model Role {
@@ -147,6 +158,7 @@ model User {
   permissionOverrides         UserPermissionOverride[]
   timesheets                  Timesheet[]                 @relation("TimesheetUser")
   approvedTimesheets          Timesheet[]                 @relation("TimesheetApprover")
+  reviewedTimesheets          Timesheet[]                 @relation("TimesheetReviewer")
   generatedReports            InspectionReport[]          @relation("ReportGeneratedBy")
   reviewedReports             InspectionReport[]          @relation("ReportReviewedBy")
   approvedReports             InspectionReport[]          @relation("ReportApprovedBy")
@@ -174,6 +186,23 @@ model User {
   salesQuotations             SalesQuotation[]            @relation("QuotationSalesPerson")
   createdAt                   DateTime                    @default(now())
   updatedAt                   DateTime                    @updatedAt
+
+  receivedPayments   PaymentCollection[] @relation("ReceivedBy")
+  submittedPayments  PaymentCollection[] @relation("SubmittedBy")
+  verifiedPayments   PaymentCollection[] @relation("VerifiedBy")
+  reconciledPayments PaymentCollection[] @relation("ReconciledBy")
+  closedJobs         JobClosure[]        @relation("ClosedBy")
+
+  createdInvoices       Invoice[]                     @relation("Creator")
+  approvedInvoices      Invoice[]                     @relation("Approver")
+  creditNotes           CreditNote[]                  @relation("CreditNoteApprover")
+  engineerProfile       EngineerProfile?
+  authorizedScopes      InspectorScopeAuthorization[] @relation("ScopeAuthorizedBy")
+  monitoringEvaluations InspectorMonitoring[]         @relation("MonitoringEvaluator")
+  SiteAccessPass        SiteAccessPass[]
+  aiTransactionLogs     AITransactionLog[]
+  aiStagedRequests      AIStagedOutput[]              @relation("AIStagedRequestedBy")
+  aiStagedReviews       AIStagedOutput[]              @relation("AIStagedReviewedBy")
 }
 
 model Customer {
@@ -198,56 +227,63 @@ model Customer {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   Inspection  Inspection[]
+  LPO         LPO[]
 
   @@index([companyId, status])
 }
 
 model Job {
-  id                Int                @id @default(autoincrement())
-  companyId         Int
-  company           Company            @relation(fields: [companyId], references: [id])
-  customerId        Int
-  customer          Customer           @relation(fields: [customerId], references: [id])
-  jobNumber         String             @unique
-  type              String?
-  status            String             @default("NEW")
-  scheduledDate     DateTime?
-  site              String?
-  siteId            Int?
-  customerSite      CustomerSite?      @relation(fields: [siteId], references: [id])
-  locationId        Int?
-  location          Location?          @relation(fields: [locationId], references: [id])
-  contactName       String?
-  contactPhone      String?
-  contactEmail      String?
-  customerReference String?
-  quotationId       String?
-  salesQuotations   SalesQuotation[]   @relation("QuotationJob")
-  enrollments       Enrollment[]
-  priority          String?            @default("NORMAL")
-  scope             String?
-  internalRemarks   String?
-  engineerId        Int?
-  engineer          User?              @relation("EngineerJobs", fields: [engineerId], references: [id])
-  inspectorId       Int?
-  assignedInspector User?              @relation("InspectorJobs", fields: [inspectorId], references: [id])
-  assets            Json?
-  notes             String?
-  cancelReason      String?
-  incompleteReason  String?
-  reschedules       Reschedule[]
-  jobServices       JobService[]
-  inspections       Inspection[]
-  trainings         Training[]
-  trainingSessions  TrainingSession[]
-  certificates      Certificate[]
-  payments          Payment[]
-  checklistResults  ChecklistResult[]
-  timesheets        Timesheet[]
-  inspectionReports InspectionReport[]
-  failureWorkflows  FailureWorkflow[]
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id                            Int                             @id @default(autoincrement())
+  companyId                     Int
+  company                       Company                         @relation(fields: [companyId], references: [id])
+  customerId                    Int
+  customer                      Customer                        @relation(fields: [customerId], references: [id])
+  jobNumber                     String                          @unique
+  type                          String?
+  status                        String                          @default("NEW")
+  scheduledDate                 DateTime?
+  site                          String?
+  siteId                        Int?
+  customerSite                  CustomerSite?                   @relation(fields: [siteId], references: [id])
+  locationId                    Int?
+  location                      Location?                       @relation(fields: [locationId], references: [id])
+  contactName                   String?
+  contactPhone                  String?
+  contactEmail                  String?
+  customerReference             String?
+  quotationId                   String?
+  salesQuotations               SalesQuotation[]                @relation("QuotationJob")
+  enrollments                   Enrollment[]
+  priority                      String?                         @default("NORMAL")
+  scope                         String?
+  internalRemarks               String?
+  engineerId                    Int?
+  engineer                      User?                           @relation("EngineerJobs", fields: [engineerId], references: [id])
+  inspectorId                   Int?
+  assignedInspector             User?                           @relation("InspectorJobs", fields: [inspectorId], references: [id])
+  assets                        Json?
+  notes                         String?
+  cancelReason                  String?
+  incompleteReason              String?
+  reschedules                   Reschedule[]
+  jobServices                   JobService[]
+  inspections                   Inspection[]
+  trainings                     Training[]
+  trainingSessions              TrainingSession[]
+  certificates                  Certificate[]
+  payments                      Payment[]
+  invoices                      Invoice[]
+  jobClosures                   JobClosure[]
+  checklistResults              ChecklistResult[]
+  timesheets                    Timesheet[]
+  inspectionReports             InspectionReport[]
+  failureWorkflows              FailureWorkflow[]
+  createdAt                     DateTime                        @default(now())
+  updatedAt                     DateTime                        @updatedAt
+  LPO                           LPO[]
+  WitnessedCompetencyAssessment WitnessedCompetencyAssessment[]
+  InspectorMonitoring           InspectorMonitoring[]
+  SiteAccessPass                SiteAccessPass[]
 
   @@index([companyId, status])
   @@index([companyId, type])
@@ -296,7 +332,9 @@ model JobService {
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
-  @@unique([jobId, serviceType])
+  serviceSequence Int? @default(1)
+
+  @@index([jobId])
   @@index([companyId, jobId])
   @@index([companyId, status])
   @@index([companyId, serviceType])
@@ -652,6 +690,7 @@ model Certificate {
   renewals                   Certificate[]             @relation("CertificateRenewal")
   createdAt                  DateTime                  @default(now())
   updatedAt                  DateTime                  @updatedAt
+  DeliveryDispatchItem       DeliveryDispatchItem[]
 
   @@unique([jobId, sequence])
   @@index([companyId, status])
@@ -663,23 +702,23 @@ model Certificate {
 }
 
 model CertificateValidityRule {
-  id              Int      @id @default(autoincrement())
-  companyId       Int
-  company         Company  @relation(fields: [companyId], references: [id])
-  name            String
-  description     String?
-  certificateType String   // TRAINING, INSPECTION
+  id                Int      @id @default(autoincrement())
+  companyId         Int
+  company           Company  @relation(fields: [companyId], references: [id])
+  name              String
+  description       String?
+  certificateType   String // TRAINING, INSPECTION
   equipmentCategory String? // FORKLIFT, CRANE, EXCAVATOR, SCAFFOLD, etc.
-  equipmentType   String?  // Specific type within category
-  validityMonths  Int      // Validity in months
-  isActive        Boolean  @default(true)
-  isDefault       Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  equipmentType     String? // Specific type within category
+  validityMonths    Int // Validity in months
+  isActive          Boolean  @default(true)
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
+  @@unique([companyId, name])
   @@index([companyId, certificateType])
   @@index([companyId, equipmentCategory])
-  @@unique([companyId, name])
 }
 
 model CertificateTemplate {
@@ -733,42 +772,42 @@ enum ChecklistItemStatus {
   PASS
   FAIL
   NA
-  CF  // Critical Failure - unsafe to use
+  CF // Critical Failure - unsafe to use
 }
 
 model ChecklistItem {
-  id              Int      @id @default(autoincrement())
-  companyId       Int
-  company         Company  @relation(fields: [companyId], references: [id])
-  templateId      Int
-  template        ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  section         String?
-  itemNumber      String
-  description     String
-  isRequired      Boolean  @default(false)
-  referenceStd    String?  // Reference to standard/code
-  order           Int      @default(0)
-  itemResults     ChecklistItemResult[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           Int                   @id @default(autoincrement())
+  companyId    Int
+  company      Company               @relation(fields: [companyId], references: [id])
+  templateId   Int
+  template     ChecklistTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  section      String?
+  itemNumber   String
+  description  String
+  isRequired   Boolean               @default(false)
+  referenceStd String? // Reference to standard/code
+  order        Int                   @default(0)
+  itemResults  ChecklistItemResult[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 
   @@index([templateId, order])
 }
 
 model ChecklistItemResult {
-  id              Int                @id @default(autoincrement())
-  companyId       Int
-  company         Company            @relation(fields: [companyId], references: [id])
-  resultId        Int
-  result          ChecklistResult    @relation(fields: [resultId], references: [id], onDelete: Cascade)
-  itemId          Int
-  item            ChecklistItem      @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  status          ChecklistItemStatus @default(NA)
-  remarks         String?
-  photos          String[]
-  measurements    Json?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id           Int                 @id @default(autoincrement())
+  companyId    Int
+  company      Company             @relation(fields: [companyId], references: [id])
+  resultId     Int
+  result       ChecklistResult     @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  itemId       Int
+  item         ChecklistItem       @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  status       ChecklistItemStatus @default(NA)
+  remarks      String?
+  photos       String[]
+  measurements Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   @@unique([resultId, itemId])
   @@index([resultId])
@@ -776,70 +815,197 @@ model ChecklistItemResult {
 }
 
 model ChecklistResult {
-  id            Int               @id @default(autoincrement())
+  id            Int                   @id @default(autoincrement())
   companyId     Int
-  company       Company           @relation(fields: [companyId], references: [id])
+  company       Company               @relation(fields: [companyId], references: [id])
   jobId         Int
-  job           Job               @relation(fields: [jobId], references: [id])
+  job           Job                   @relation(fields: [jobId], references: [id])
   inspectionId  Int?
-  inspection    Inspection?       @relation(fields: [inspectionId], references: [id])
+  inspection    Inspection?           @relation(fields: [inspectionId], references: [id])
   templateId    Int
-  template      ChecklistTemplate @relation(fields: [templateId], references: [id])
-  checklistType ChecklistType     @default(NORMAL)
+  template      ChecklistTemplate     @relation(fields: [templateId], references: [id])
+  checklistType ChecklistType         @default(NORMAL)
   status        String?
   remarks       String?
   findings      Json?
   measurements  Json?
   photos        String[]
   verifiedBy    Int?
-  user          User?             @relation(fields: [verifiedBy], references: [id])
+  user          User?                 @relation(fields: [verifiedBy], references: [id])
   itemResults   ChecklistItemResult[]
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
   @@index([companyId, jobId, checklistType])
   @@index([inspectionId, checklistType])
 }
 
 model Revision {
-  id            Int         @id @default(autoincrement())
-  companyId     Int
-  company       Company     @relation(fields: [companyId], references: [id])
-  certificateId Int
-  certificate   Certificate @relation(fields: [certificateId], references: [id])
-  rootCause     String?
-  oldValue      String?
-  newValue      String?
-  approvedBy    Int?
-  user          User?       @relation("ApprovedBy", fields: [approvedBy], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id             Int          @id @default(autoincrement())
+  companyId      Int
+  company        Company      @relation(fields: [companyId], references: [id])
+  certificateId  Int?
+  certificate    Certificate? @relation(fields: [certificateId], references: [id])
+  revisionCode   String?      @default("R00")
+  reasonCategory String?
+  changeFields   Json?
+  rootCause      String?
+  oldValue       String?
+  newValue       String?
+  approvedBy     Int?
+  user           User?        @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 model Payment {
-  id        Int       @id @default(autoincrement())
-  companyId Int
-  company   Company   @relation(fields: [companyId], references: [id])
-  jobId     Int
-  job       Job       @relation(fields: [jobId], references: [id])
-  amount    Float
-  method    String?
-  status    String?
-  invoices  Invoice[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          Int                 @id @default(autoincrement())
+  companyId   Int
+  company     Company             @relation(fields: [companyId], references: [id])
+  jobId       Int
+  job         Job                 @relation(fields: [jobId], references: [id])
+  amount      Float
+  method      String?
+  status      String?
+  invoices    Invoice[]
+  collections PaymentCollection[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 }
 
 model Invoice {
-  id            Int      @id @default(autoincrement())
-  companyId     Int
-  company       Company  @relation(fields: [companyId], references: [id])
-  paymentId     Int
-  payment       Payment  @relation(fields: [paymentId], references: [id])
-  invoiceNumber String   @unique
-  pdfUrl        String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 Int                 @id @default(autoincrement())
+  companyId          Int
+  company            Company             @relation(fields: [companyId], references: [id])
+  paymentId          Int?
+  payment            Payment?            @relation(fields: [paymentId], references: [id])
+  quotationId        Int?
+  quotation          SalesQuotation?     @relation(fields: [quotationId], references: [id])
+  jobId              Int
+  job                Job                 @relation(fields: [jobId], references: [id])
+  invoiceNumber      String              @unique
+  title              String?
+  status             String              @default("DRAFT")
+  dueDate            DateTime?
+  issueDate          DateTime?
+  currency           String?             @default("AED")
+  taxRate            Float?              @default(5.0)
+  subtotal           Float?              @default(0)
+  taxAmount          Float?              @default(0)
+  totalAmount        Float?              @default(0)
+  amountPaid         Float?              @default(0)
+  amountDue          Float?              @default(0)
+  pdfUrl             String?
+  notes              String?
+  createdBy          Int?
+  creator            User?               @relation("Creator", fields: [createdBy], references: [id])
+  approvedBy         Int?
+  approver           User?               @relation("Approver", fields: [approvedBy], references: [id])
+  items              InvoiceItem[]
+  creditNotes        CreditNote[]
+  deliveryLogs       DeliveryLog[]
+  paymentCollections PaymentCollection[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  LPO                LPO?                @relation(fields: [lPOId], references: [id])
+  lPOId              Int?
+
+  @@index([companyId, status])
+  @@index([jobId])
+  @@index([paymentId])
+}
+
+model InvoiceItem {
+  id              Int      @id @default(autoincrement())
+  companyId       Int
+  company         Company  @relation(fields: [companyId], references: [id])
+  invoiceId       Int
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id])
+  lineNumber      Int
+  description     String
+  serviceType     String?
+  quantity        Float    @default(1)
+  unitPrice       Float    @default(0)
+  taxRate         Float?   @default(5.0)
+  taxAmount       Float?   @default(0)
+  lineTotal       Float    @default(0)
+  quotationItemId Int?
+  jobServiceId    Int?
+  timesheetId     Int?
+  createdAt       DateTime @default(now())
+}
+
+model CreditNote {
+  id               Int      @id @default(autoincrement())
+  companyId        Int
+  company          Company  @relation(fields: [companyId], references: [id])
+  invoiceId        Int
+  invoice          Invoice  @relation(fields: [invoiceId], references: [id])
+  creditNoteNumber String   @unique
+  amount           Float
+  reason           String?
+  status           String?  @default("DRAFT")
+  createdBy        Int?
+  approver         User?    @relation("CreditNoteApprover", fields: [createdBy], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([companyId, invoiceId])
+}
+
+model PaymentCollection {
+  id             Int       @id @default(autoincrement())
+  companyId      Int
+  company        Company   @relation(fields: [companyId], references: [id])
+  paymentId      Int
+  payment        Payment   @relation(fields: [paymentId], references: [id])
+  invoiceId      Int?
+  invoice        Invoice?  @relation(fields: [invoiceId], references: [id])
+  amount         Float
+  status         String    @default("RECEIVED")
+  receivedBy     Int?
+  receivedByUser User?     @relation("ReceivedBy", fields: [receivedBy], references: [id])
+  submittedAt    DateTime?
+  submittedBy    Int?
+  submittedUser  User?     @relation("SubmittedBy", fields: [submittedBy], references: [id])
+  verifiedAt     DateTime?
+  verifiedBy     Int?
+  verifiedUser   User?     @relation("VerifiedBy", fields: [verifiedBy], references: [id])
+  reconciledAt   DateTime?
+  reconciledBy   Int?
+  reconciledUser User?     @relation("ReconciledBy", fields: [reconciledBy], references: [id])
+  evidence       String?
+  reference      String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([companyId, status])
+  @@index([paymentId])
+}
+
+model JobClosure {
+  id                  Int       @id @default(autoincrement())
+  companyId           Int
+  company             Company   @relation(fields: [companyId], references: [id])
+  jobId               Int
+  job                 Job       @relation(fields: [jobId], references: [id])
+  status              String?   @default("PENDING")
+  completedServices   Int?      @default(0)
+  totalServices       Int?      @default(0)
+  technicalApproval   Boolean?  @default(false)
+  financialSettlement Boolean?  @default(false)
+  deliveryComplete    Boolean?  @default(false)
+  pendingActions      String?
+  checklist           Json?
+  closedAt            DateTime?
+  closedBy            Int?
+  closedUser          User?     @relation("ClosedBy", fields: [closedBy], references: [id])
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([jobId])
+  @@index([companyId, status])
 }
 
 model DeliveryLog {
@@ -848,6 +1014,8 @@ model DeliveryLog {
   company       Company     @relation(fields: [companyId], references: [id])
   certificateId Int
   certificate   Certificate @relation(fields: [certificateId], references: [id])
+  invoiceId     Int?
+  invoice       Invoice?    @relation(fields: [invoiceId], references: [id])
   userId        Int?
   user          User?       @relation(fields: [userId], references: [id])
   deliveryDate  DateTime?
@@ -858,22 +1026,61 @@ model DeliveryLog {
   updatedAt     DateTime    @updatedAt
 
   deliveryNotes DeliveryNote[]
+  dispatchItems DeliveryDispatchItem[]
+}
+
+model LPO {
+  id          Int       @id @default(autoincrement())
+  companyId   Int
+  company     Company   @relation(fields: [companyId], references: [id])
+  lpoNumber   String
+  customerId  Int
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  jobId       Int?
+  job         Job?      @relation(fields: [jobId], references: [id])
+  amount      Float?
+  currency    String    @default("AED")
+  issueDate   DateTime?
+  expiryDate  DateTime?
+  documentUrl String?
+  status      String    @default("ACTIVE")
+  invoices    Invoice[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([companyId, lpoNumber])
+  @@index([companyId, customerId])
+}
+
+model DeliveryDispatchItem {
+  id              Int          @id @default(autoincrement())
+  deliveryLogId   Int
+  deliveryLog     DeliveryLog  @relation(fields: [deliveryLogId], references: [id], onDelete: Cascade)
+  certificateId   Int?
+  certificate     Certificate? @relation(fields: [certificateId], references: [id])
+  itemType        String       @default("CERTIFICATE")
+  referenceNumber String?
+  notes           String?
+  createdAt       DateTime     @default(now())
+
+  @@index([deliveryLogId])
+  @@index([certificateId])
 }
 
 model DeliveryNote {
-  id            Int        @id @default(autoincrement())
+  id            Int         @id @default(autoincrement())
   companyId     Int
-  company       Company    @relation(fields: [companyId], references: [id])
+  company       Company     @relation(fields: [companyId], references: [id])
   deliveryLogId Int
   deliveryLog   DeliveryLog @relation(fields: [deliveryLogId], references: [id])
-  noteNumber    String     @unique
+  noteNumber    String      @unique
   title         String?
   description   String?
   notes         String?
-  status        String?    @default("PENDING")
+  status        String?     @default("PENDING")
   deliveredAt   DateTime?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model AuthSession {
@@ -952,29 +1159,76 @@ model TraineeDocument {
 }
 
 model Timesheet {
-  id           Int         @id @default(autoincrement())
-  companyId    Int
-  company      Company     @relation(fields: [companyId], references: [id])
-  userId       Int
-  user         User        @relation("TimesheetUser", fields: [userId], references: [id])
-  jobId        Int?
-  job          Job?        @relation(fields: [jobId], references: [id])
-  date         DateTime
-  startTime    DateTime
-  endTime      DateTime
-  breakMinutes Int         @default(0)
-  description  String?
-  status       String      @default("draft")
-  approvedBy   Int?
-  approver     User?       @relation("TimesheetApprover", fields: [approvedBy], references: [id])
-  jobServiceId Int?
-  jobService   JobService? @relation(fields: [jobServiceId], references: [id])
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                   Int                      @id @default(autoincrement())
+  companyId            Int
+  company              Company                  @relation(fields: [companyId], references: [id])
+  timesheetNumber      String                   @unique
+  timesheetType        String                   @default("INSPECTION") // INSPECTION, TRAINING
+  userId               Int
+  user                 User                     @relation("TimesheetUser", fields: [userId], references: [id])
+  jobId                Int?
+  job                  Job?                     @relation(fields: [jobId], references: [id])
+  jobServiceId         Int?
+  jobService           JobService?              @relation(fields: [jobServiceId], references: [id])
+  date                 DateTime
+  startTime            DateTime
+  endTime              DateTime
+  breakMinutes         Int                      @default(0)
+  travelTimeMinutes    Int                      @default(0)
+  totalWorkingHours    Float?
+  overtimeHours        Float?                   @default(0)
+  additionalWork       String?
+  workCompletionStatus String? // NOT_STARTED, IN_PROGRESS, COMPLETED, PARTIAL
+  inspectionResult     String? // PENDING, PASSED, FAILED, NOT_APPLICABLE
+  workLocation         String?
+  description          String?
+  status               String                   @default("draft")
+  approvedBy           Int?
+  approver             User?                    @relation("TimesheetApprover", fields: [approvedBy], references: [id])
+  reviewedBy           Int?
+  reviewer             User?                    @relation("TimesheetReviewer", fields: [reviewedBy], references: [id])
+  reviewComments       String?
+  reviewedAt           DateTime?
+  approvedAt           DateTime?
+  submittedAt          DateTime?
+  equipmentItems       TimesheetEquipmentItem[]
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
 
   @@index([companyId, status])
-  @@index([jobId])
+  @@index([companyId, jobId])
+  @@index([companyId, userId, date])
+  @@index([companyId, timesheetType, status])
   @@index([jobServiceId])
+  @@index([timesheetNumber])
+}
+
+model TimesheetEquipmentItem {
+  id                   Int        @id @default(autoincrement())
+  companyId            Int
+  company              Company    @relation(fields: [companyId], references: [id])
+  timesheetId          Int
+  timesheet            Timesheet  @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  equipmentId          Int?
+  equipment            Equipment? @relation(fields: [equipmentId], references: [id])
+  equipmentType        String?
+  equipmentDescription String?
+  manufacturer         String?
+  model                String?
+  serialNumber         String?
+  equipmentCode        String?
+  quantity             Int?       @default(1)
+  inspectionResult     String? // PASSED, FAILED, NOT_APPLICABLE, PENDING
+  inspectionDate       DateTime?
+  remarks              String?
+  certificateStatus    String? // ISSUED, PENDING, NOT_APPLICABLE, FAILED
+  reportStatus         String? // GENERATED, PENDING, NOT_APPLICABLE
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  @@index([companyId, timesheetId])
+  @@index([equipmentId])
+  @@index([timesheetId])
 }
 
 model CertificateVerification {
@@ -1171,32 +1425,33 @@ model Location {
 }
 
 model Equipment {
-  id                 Int                @id @default(autoincrement())
-  companyId          Int
-  company            Company            @relation(fields: [companyId], references: [id])
-  customerId         Int
-  customer           Customer           @relation(fields: [customerId], references: [id])
-  code               String
-  name               String
-  category           String // FORKLIFT, CRANE, EXCAVATOR, etc.
-  type               String? // Specific model/type
-  make               String?
-  model              String?
-  serialNumber       String?
-  registrationNumber String?
-  specifications     Json?
-  hireType           String             @default("OWNED") // OWNED, HIRED, THIRD_PARTY
-  status             String             @default("ACTIVE") // ACTIVE, INACTIVE, RETIRED
-  locationId         Int?
-  location           Location?          @relation(fields: [locationId], references: [id])
-  normalChecklistId  Int?
-  normalChecklist    ChecklistTemplate? @relation("EquipmentNormalChecklist", fields: [normalChecklistId], references: [id])
-  fullChecklistId    Int?
-  fullChecklist      ChecklistTemplate? @relation("EquipmentFullChecklist", fields: [fullChecklistId], references: [id])
-  documents          Document[]
-  inspections        Inspection[]
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                      Int                      @id @default(autoincrement())
+  companyId               Int
+  company                 Company                  @relation(fields: [companyId], references: [id])
+  customerId              Int
+  customer                Customer                 @relation(fields: [customerId], references: [id])
+  code                    String
+  name                    String
+  category                String // FORKLIFT, CRANE, EXCAVATOR, etc.
+  type                    String? // Specific model/type
+  make                    String?
+  model                   String?
+  serialNumber            String?
+  registrationNumber      String?
+  specifications          Json?
+  hireType                String                   @default("OWNED") // OWNED, HIRED, THIRD_PARTY
+  status                  String                   @default("ACTIVE") // ACTIVE, INACTIVE, RETIRED
+  locationId              Int?
+  location                Location?                @relation(fields: [locationId], references: [id])
+  normalChecklistId       Int?
+  normalChecklist         ChecklistTemplate?       @relation("EquipmentNormalChecklist", fields: [normalChecklistId], references: [id])
+  fullChecklistId         Int?
+  fullChecklist           ChecklistTemplate?       @relation("EquipmentFullChecklist", fields: [fullChecklistId], references: [id])
+  documents               Document[]
+  inspections             Inspection[]
+  timesheetEquipmentItems TimesheetEquipmentItem[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   @@unique([code, companyId])
   @@unique([serialNumber, companyId])
@@ -1207,19 +1462,21 @@ model Equipment {
 }
 
 model AccreditationAuthority {
-  id                     Int                     @id @default(autoincrement())
-  companyId              Int
-  company                Company                 @relation(fields: [companyId], references: [id])
-  code                   String
-  name                   String
-  status                 String                  @default("ACTIVE")
-  locationAccreditations LocationAccreditation[]
-  courseAccreditations   CourseAccreditation[]
-  trainingCourses        TrainingCourse[]
-  trainingSessions       TrainingSession[]
-  certificates           Certificate[]
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
+  id                        Int                         @id @default(autoincrement())
+  companyId                 Int
+  company                   Company                     @relation(fields: [companyId], references: [id])
+  code                      String
+  name                      String
+  status                    String                      @default("ACTIVE")
+  locationAccreditations    LocationAccreditation[]
+  courseAccreditations      CourseAccreditation[]
+  trainingCourses           TrainingCourse[]
+  trainingSessions          TrainingSession[]
+  certificates              Certificate[]
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+  AccreditationApplication  AccreditationApplication[]
+  GrantedAccreditationScope GrantedAccreditationScope[]
 
   @@unique([code, companyId])
   @@index([companyId, status])
@@ -1609,6 +1866,7 @@ model SalesQuotation {
   items           QuotationItem[]
   convertedJobId  Int?
   convertedJob    Job?            @relation("QuotationJob", fields: [convertedJobId], references: [id])
+  invoices        Invoice[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -1708,4 +1966,250 @@ model Subcontractor {
   updatedAt      DateTime  @updatedAt
 
   @@index([companyId, isActive])
+}
+
+model EngineerProfile {
+  id                   Int       @id @default(autoincrement())
+  userId               Int       @unique
+  user                 User      @relation(fields: [userId], references: [id])
+  employeeId           String    @unique
+  designation          String
+  primaryDiscipline    String    @default("MECHANICAL")
+  educationDegree      String?
+  yearsExperience      Int       @default(0)
+  passportExpiry       DateTime?
+  nationalIdExpiry     DateTime?
+  drivingLicenseExpiry DateTime?
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  credentials     EngineerCredential[]
+  authorizations  InspectorScopeAuthorization[]
+  witnessedAsCand WitnessedCompetencyAssessment[] @relation("CandidateAssessments")
+  witnessedAsEval WitnessedCompetencyAssessment[] @relation("EvaluatorAssessments")
+  monitoringLogs  InspectorMonitoring[]
+}
+
+model EngineerCredential {
+  id                Int             @id @default(autoincrement())
+  engineerProfileId Int
+  engineerProfile   EngineerProfile @relation(fields: [engineerProfileId], references: [id], onDelete: Cascade)
+  credentialType    String
+  credentialName    String
+  issuingBody       String
+  certificateNumber String
+  issueDate         DateTime
+  expiryDate        DateTime
+  documentUrl       String?
+  mandatoryForField Boolean         @default(true)
+  status            String          @default("ACTIVE")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([engineerProfileId, expiryDate])
+}
+
+model InspectorScopeAuthorization {
+  id                 Int                            @id @default(autoincrement())
+  engineerProfileId  Int
+  engineerProfile    EngineerProfile                @relation(fields: [engineerProfileId], references: [id], onDelete: Cascade)
+  scopeType          String                         @default("INSPECTION")
+  scopeCode          String
+  authorizationLevel String                         @default("LEVEL_2_INSPECTOR")
+  authorizedByUserId Int
+  authorizedByUser   User                           @relation("ScopeAuthorizedBy", fields: [authorizedByUserId], references: [id])
+  assessmentId       Int?                           @unique
+  assessment         WitnessedCompetencyAssessment? @relation(fields: [assessmentId], references: [id])
+  validFrom          DateTime
+  validUntil         DateTime
+  status             String                         @default("ACTIVE")
+  suspensionReason   String?
+  createdAt          DateTime                       @default(now())
+  updatedAt          DateTime                       @updatedAt
+
+  @@index([engineerProfileId, scopeCode, status])
+}
+
+model WitnessedCompetencyAssessment {
+  id                Int                          @id @default(autoincrement())
+  candidateId       Int
+  candidate         EngineerProfile              @relation("CandidateAssessments", fields: [candidateId], references: [id])
+  evaluatorId       Int
+  evaluator         EngineerProfile              @relation("EvaluatorAssessments", fields: [evaluatorId], references: [id])
+  jobId             Int
+  job               Job                          @relation(fields: [jobId], references: [id])
+  scopeCode         String
+  assessmentDate    DateTime
+  scorePercent      Float
+  result            String                       @default("SATISFACTORY")
+  checklistDataJson Json?
+  evaluatorRemarks  String
+  candidateRemarks  String?
+  authorization     InspectorScopeAuthorization?
+  createdAt         DateTime                     @default(now())
+
+  @@index([candidateId, scopeCode])
+}
+
+model InspectorMonitoring {
+  id                Int             @id @default(autoincrement())
+  engineerProfileId Int
+  engineerProfile   EngineerProfile @relation(fields: [engineerProfileId], references: [id], onDelete: Cascade)
+  evaluatorUserId   Int
+  evaluatorUser     User            @relation("MonitoringEvaluator", fields: [evaluatorUserId], references: [id])
+  monitoringType    String          @default("ANNUAL_ON_SITE_OBSERVATION")
+  jobId             Int
+  job               Job             @relation(fields: [jobId], references: [id])
+  scopeCode         String
+  monitoringDate    DateTime
+  outcome           String          @default("CONFORMING")
+  findingsSummary   String
+  capaRequired      Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+
+  @@index([engineerProfileId, monitoringDate])
+}
+
+model AccreditationApplication {
+  id                  Int                       @id @default(autoincrement())
+  companyId           Int
+  company             Company                   @relation(fields: [companyId], references: [id])
+  authorityId         Int
+  authority           AccreditationAuthority    @relation(fields: [authorityId], references: [id])
+  standardReference   String                    @default("ISO/IEC 17020:2012")
+  applicationNumber   String
+  submissionDate      DateTime
+  status              String                    @default("SUBMITTED") // DRAFT, SUBMITTED, DOCUMENT_REVIEW, ON_SITE_ASSESSMENT, APPROVED, REJECTED
+  requestedScopesJson Json
+  notes               String?
+  assessments         AccreditationAssessment[]
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@unique([companyId, applicationNumber])
+  @@index([companyId, status])
+}
+
+model AccreditationAssessment {
+  id              Int                          @id @default(autoincrement())
+  applicationId   Int
+  application     AccreditationApplication     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  assessmentType  String                       @default("INITIAL_ASSESSMENT") // INITIAL_ASSESSMENT, SURVEILLANCE_YEAR_1, SURVEILLANCE_YEAR_2, REACCREDITATION
+  leadAssessor    String
+  startDate       DateTime
+  endDate         DateTime
+  outcome         String                       @default("PENDING_CORRECTIONS") // RECOMMENDED, PENDING_CORRECTIONS, NOT_RECOMMENDED
+  findingsSummary String?
+  nonconformities AccreditationNonconformity[]
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+}
+
+model AccreditationNonconformity {
+  id           Int                     @id @default(autoincrement())
+  assessmentId Int
+  assessment   AccreditationAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  ncrNumber    String
+  clauseNumber String
+  category     String                  @default("MINOR") // MAJOR, MINOR, OBSERVATION
+  description  String
+  rootCause    String?
+  capaPlan     String?
+  targetDate   DateTime
+  status       String                  @default("OPEN") // OPEN, EVIDENCE_SUBMITTED, CLOSED
+  evidenceUrl  String?
+  closedAt     DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  @@index([assessmentId, status])
+}
+
+model GrantedAccreditationScope {
+  id                  Int                    @id @default(autoincrement())
+  companyId           Int
+  company             Company                @relation(fields: [companyId], references: [id])
+  authorityId         Int
+  authority           AccreditationAuthority @relation(fields: [authorityId], references: [id])
+  accreditationNumber String
+  standardReference   String                 @default("ISO/IEC 17020:2012")
+  scopeCode           String // e.g. LIFT_CRANE_MOBILE
+  scopeDescription    String
+  grantedDate         DateTime
+  expiryDate          DateTime
+  status              String                 @default("ACTIVE") // ACTIVE, SUSPENDED, EXPIRED, WITHDRAWN
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@unique([companyId, authorityId, scopeCode])
+  @@index([companyId, status])
+}
+
+model SiteAccessPass {
+  id                Int      @id @default(autoincrement())
+  companyId         Int
+  company           Company  @relation(fields: [companyId], references: [id])
+  userId            Int
+  user              User     @relation(fields: [userId], references: [id])
+  jobId             Int?
+  job               Job?     @relation(fields: [jobId], references: [id])
+  passType          String // CICPA, PORT_PASS, REFINERY, MUNICIPALITY
+  passNumber        String
+  issueDate         DateTime
+  expiryDate        DateTime
+  documentUrl       String?
+  securityClearance String?  @default("STANDARD")
+  status            String   @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([companyId, userId])
+  @@index([expiryDate])
+}
+
+
+model AITransactionLog {
+  id               Int      @id @default(autoincrement())
+  companyId        Int
+  company          Company  @relation(fields: [companyId], references: [id])
+  userId           Int
+  user             User     @relation(fields: [userId], references: [id])
+  assistantType    String // DOCUMENT_EXTRACTOR | SCHEDULING | INSPECTION_QA | COMPETENCY | ACCREDITATION | ACCOUNTS | DELIVERY | OPERATIONS_COPILOT
+  model            String
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  totalTokens      Int      @default(0)
+  estimatedCostUSD Float    @default(0)
+  durationMs       Int      @default(0)
+  status           String   @default("SUCCESS") // SUCCESS | ERROR | TIMEOUT
+  errorMessage     String?
+  stagedOutputId   Int?
+  createdAt        DateTime @default(now())
+
+  @@index([companyId, assistantType])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model AIStagedOutput {
+  id             Int       @id @default(autoincrement())
+  companyId      Int
+  company        Company   @relation(fields: [companyId], references: [id])
+  assistantType  String // Same enum as AITransactionLog
+  inputSummary   String? // Brief description of what was analyzed
+  outputJson     Json // The structured AI output (parsed via Zod)
+  status         String    @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | REJECTED | EXPIRED
+  requestedById  Int
+  requestedBy    User      @relation("AIStagedRequestedBy", fields: [requestedById], references: [id])
+  reviewedById   Int?
+  reviewedBy     User?     @relation("AIStagedReviewedBy", fields: [reviewedById], references: [id])
+  reviewNotes    String?
+  reviewedAt     DateTime?
+  expiresAt      DateTime? // Auto-expire stale outputs
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([companyId, status])
+  @@index([assistantType, status])
 }

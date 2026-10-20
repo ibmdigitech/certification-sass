@@ -2,6 +2,14 @@ import { Providers } from "@/components/providers";
 import { OfflineProviderWrapper } from "@/components/offline/OfflineProviderWrapper";
 import "./globals.css";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: "#3b82f6",
+};
+
 export const metadata = {
   title: "CertAI - Offline-First Training & Inspection",
   description: "Enterprise-grade training, competency, and inspection SaaS",

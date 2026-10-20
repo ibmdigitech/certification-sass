@@ -1,13 +1,15 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 export class PermissionService {
   static async checkUserPermission(userId: number, resource: string, action: string) {
+    const expectedPermission = `${resource}:${action}`.toLowerCase();
+
     const userPermissionOverride = await prisma.userPermissionOverride.findFirst({
       where: {
         userId,
         permission: {
           name: {
-            contains: `${resource}:${action}`,
+            equals: expectedPermission,
             mode: 'insensitive'
           }
         }
@@ -41,12 +43,20 @@ export class PermissionService {
     }
 
     const roleName = userWithRole.roleRef?.name || userWithRole.role;
+    if (roleName === 'SUPER_ADMIN') {
+      return { allowed: true };
+    }
+
     const rolePermissions = userWithRole.roleRef?.permissions || [];
 
-    const hasPermission = rolePermissions.some((rp: any) =>
-      rp.permission?.name?.includes(`${resource}`) ||
-      (rp.permission?.category === resource)
-    );
+    const hasPermission = rolePermissions.some((rp: any) => {
+      const permName = (rp.permission?.name || '').toLowerCase();
+      return (
+        permName === expectedPermission ||
+        permName === `${resource}:*` ||
+        permName === '*:*'
+      );
+    });
 
     if (hasPermission) {
       return { allowed: true };

@@ -129,57 +129,63 @@ export function PrintCenter() {
   };
 
   const downloadCertificate = async (certificateId: number) => {
+    setDownloadingId(certificateId);
     try {
       const cert = certificates.find(c => c.id === certificateId);
-      if (!cert || !cert.pdfUrl) {
-        alert("PDF not available for this certificate");
+      const filename = cert ? `${cert.number}.pdf` : `certificate-${certificateId}.pdf`;
+
+      // Try dedicated stream endpoint first (generates on-demand if pdfUrl missing)
+      const streamRes = await fetch(`/api/certificates/${certificateId}/pdf`);
+      if (streamRes.ok) {
+        const blob = await streamRes.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
         return;
       }
 
-      // Record print event
-      const printResponse = await fetch(`/api/certificates/${certificateId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recordPrint: true }),
-      });
-      
-      if (!printResponse.ok) {
-        console.warn("Failed to record print event:", await printResponse.text());
+      // Fallback to pre-existing cert.pdfUrl if available
+      if (cert?.pdfUrl) {
+        const pdfUrl = cert.pdfUrl;
+        let blob: Blob;
+
+        if (pdfUrl.startsWith('data:application/pdf;base64,')) {
+          const base64Data = pdfUrl.split(',')[1];
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Uint8Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          blob = new Blob([byteNumbers], { type: 'application/pdf' });
+        } else {
+          const res = await fetch(pdfUrl);
+          if (!res.ok) throw new Error("Failed to fetch certificate PDF");
+          blob = await res.blob();
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        return;
       }
 
-      // Download the PDF - handle large base64 data URLs
-      const pdfUrl = cert.pdfUrl;
-      let blob: Blob;
-      
-      if (pdfUrl.startsWith('data:application/pdf;base64,')) {
-        // Handle base64 data URL - convert to blob directly to avoid fetch issues with large data URLs
-        const base64Data = pdfUrl.split(',')[1];
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        blob = new Blob([byteArray], { type: 'application/pdf' });
-      } else {
-        // Regular URL - fetch normally
-        const response = await fetch(pdfUrl);
-        if (!response.ok) throw new Error("Failed to fetch PDF");
-        blob = await response.blob();
-      }
-      
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${cert.number}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      throw new Error("PDF could not be generated or fetched for this certificate.");
     } catch (error) {
       console.error("Failed to download certificate:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       alert(`Failed to download certificate: ${errorMessage}`);
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -386,9 +392,14 @@ export function PrintCenter() {
                             variant="ghost"
                             size="sm"
                             onClick={() => downloadCertificate(cert.id)}
-                            disabled={!cert.pdfUrl}
+                            disabled={downloadingId === cert.id}
+                            title="Download Certificate PDF"
                           >
-                            <Download className="w-3 h-4" />
+                            {downloadingId === cert.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Download className="w-3.5 h-3.5" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"

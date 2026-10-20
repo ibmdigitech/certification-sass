@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { CustomerCodeService } from '@/lib/services/customer-code.service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +12,13 @@ export async function GET(request: NextRequest) {
     }
     const companyId = session.user.companyId;
     const { searchParams } = new URL(request.url);
+
+    // Endpoint for frontend to preview next sequential customer code
+    if (searchParams.get('action') === 'next-code') {
+      const prefix = searchParams.get('prefix') || 'CUST';
+      const nextCode = await CustomerCodeService.previewNextCode(companyId, prefix);
+      return NextResponse.json({ success: true, nextCode });
+    }
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
     const page = Math.max(1, Number(searchParams.get('page') || '1'));
@@ -105,11 +113,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Auto-generate unique customer code if not provided
+    const finalCustomerCode = code && code.trim().length > 0
+      ? code.trim().toUpperCase()
+      : await CustomerCodeService.generateCustomerCode(companyId);
+
     const newCustomer = await (prisma as any).customer.create({
       data: {
         companyId,
         name: customerName,
-        code: code || `CUST-${Date.now().toString().slice(-4)}`,
+        code: finalCustomerCode,
         contact,
         email,
         phone,

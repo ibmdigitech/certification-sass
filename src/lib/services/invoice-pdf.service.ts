@@ -17,6 +17,7 @@ export interface InvoicePDFData {
   dueDate: Date;
   currency: string;
   jobNumber: string | null;
+  lpoNumber?: string | null;
   companyId: string | number | null;
   certificateNumbers: string[];
   timesheetNumber: string | null;
@@ -59,10 +60,11 @@ export class InvoicePDFService {
     companyId: number,
     outputFormat: 'buffer' | 'stream' = 'buffer'
   ): Promise<Buffer | Readable> {
-    const invoice = await prisma.invoice.findFirst({
+    const invoice = (await prisma.invoice.findFirst({
       where: { id: invoiceId, companyId },
       include: {
         company: { select: { name: true, logo: true } },
+        LPO: { select: { lpoNumber: true } },
         payment: {
           include: {
             job: {
@@ -82,8 +84,8 @@ export class InvoicePDFService {
             },
           },
         },
-      },
-    });
+      } as any,
+    })) as any;
 
     if (!invoice) {
       throw new Error('Invoice not found');
@@ -139,6 +141,7 @@ export class InvoicePDFService {
       dueDate: new Date(invoice.createdAt.getTime() + 30 * 86400000),
       currency: 'AED',
       jobNumber: invoice.payment?.job?.jobNumber || null,
+      lpoNumber: (invoice as any).lpo?.lpoNumber || null,
       companyId: companyId,
       certificateNumbers: certificateNumbers.map(c => c.number),
       timesheetNumber: timesheet ? `TS-${timesheet.id}` : null,
@@ -257,6 +260,11 @@ export class InvoicePDFService {
       }
       if (data.jobNumber) {
         doc.text(`Job Number: ${data.jobNumber}`, margin, y);
+        y += 10;
+      }
+      if (data.lpoNumber) {
+        doc.font('Helvetica-Bold').fillColor('#059669').text(`Client LPO #: ${data.lpoNumber}`, margin, y);
+        doc.font('Helvetica').fillColor('#666666');
         y += 10;
       }
       if (data.timesheetNumber) {

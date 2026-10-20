@@ -1,5 +1,6 @@
 ﻿import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
+import { TimesheetService } from './timesheet.service';
 
 export type SyncOperation = 'CREATE' | 'UPDATE' | 'DELETE';
 export type SyncEntityType =
@@ -160,15 +161,23 @@ export class OfflineSyncService {
 
   private static async syncTimesheet(operation: SyncOperation, payload: Record<string, unknown>, entityId: number | null) {
     if (operation === 'CREATE') {
+      const timesheetNumber = await TimesheetService.generateTimesheetNumber(payload.companyId as number);
       await prisma.timesheet.create({
         data: {
           companyId: payload.companyId as number,
+          timesheetNumber,
           userId: payload.userId as number,
           jobId: (payload.jobId as number) || null,
           date: new Date(payload.date as string),
           startTime: new Date(payload.startTime as string),
           endTime: new Date(payload.endTime as string),
           breakMinutes: (payload.breakMinutes as number) || 0,
+          travelTimeMinutes: (payload.travelTimeMinutes as number) || 0,
+          totalWorkingHours: (payload.totalWorkingHours as number) || null,
+          additionalWork: (payload.additionalWork as string) || null,
+          workCompletionStatus: (payload.workCompletionStatus as string) || null,
+          inspectionResult: (payload.inspectionResult as string) || null,
+          workLocation: (payload.workLocation as string) || null,
           description: (payload.description as string) || null,
           status: 'draft',
         },

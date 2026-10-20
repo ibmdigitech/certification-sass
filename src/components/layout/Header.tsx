@@ -157,10 +157,10 @@ export function Header() {
   const hasNotifications = notifications && notifications.total > 0;
 
   return (
-    <header className="h-16 border-b bg-background/50 backdrop-blur-md flex items-center justify-end px-6 sticky top-0 z-10">
-      <div className="flex items-center gap-2">
-        {/* Separate Notification Icons - Always Visible */}
-        <div className="flex items-center gap-1.5" role="group" aria-label="Notification categories">
+    <header className="h-14 sm:h-16 border-b bg-background/50 backdrop-blur-md flex items-center justify-end px-3 sm:px-6 sticky top-0 z-10">
+      <div className="flex items-center gap-1 sm:gap-2">
+        {/* Separate Notification Icons - Hidden on small mobile to avoid header squish, visible on md/tablet+ */}
+        <div className="hidden sm:flex items-center gap-1 sm:gap-1.5" role="group" aria-label="Notification categories">
           {/* Required Action - Amber */}
           <Button
             variant="ghost"
@@ -265,7 +265,7 @@ export function Header() {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-96 min-w-[380px] p-0">
+          <DropdownMenuContent align="end" className="w-[calc(100vw-32px)] sm:w-96 max-w-sm sm:max-w-md p-0">
             <DropdownMenuLabel className="px-4 py-3 border-b flex items-center justify-between">
               <span>Notifications</span>
               {notifications && notifications.total > 0 && (

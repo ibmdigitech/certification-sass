@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 
 export interface CreateInspectionReportInput {
@@ -279,6 +279,32 @@ export class InspectionReportService {
   }
 
   static async approveReport(id: number, companyId: number, approvedBy: number) {
+    // 1. Fetch current report and inspector identity for ISO 17020 Impartiality verification
+    const existing = await prisma.inspectionReport.findFirst({
+      where: { id, companyId },
+      include: {
+        inspection: { select: { inspectorId: true } },
+      },
+    });
+
+    if (!existing) {
+      throw new Error(`Inspection report ${id} not found.`);
+    }
+
+    // 2. Strict Impartiality Gate (Clause 4.1): Inspector cannot approve their own report
+    const inspectorId = existing.inspection?.inspectorId;
+    if (inspectorId && inspectorId === approvedBy) {
+      throw new Error(
+        'ISO/IEC 17020 Impartiality Violation: An inspector is legally forbidden from approving their own inspection report. Approval must be conducted by an independent Technical Manager or authorized signatory.'
+      );
+    }
+
+    if (existing.generatedBy && existing.generatedBy === approvedBy) {
+      throw new Error(
+        'ISO/IEC 17020 Impartiality Violation: Report author cannot act as final technical approval authority.'
+      );
+    }
+
     const report = await prisma.inspectionReport.update({
       where: { id, companyId },
       data: {
@@ -291,11 +317,6 @@ export class InspectionReportService {
         job: { include: { customer: true, location: true } },
       },
     });
-
-    // NOTE: Certificate generation is NOT automatic on report approval.
-    // It requires explicit generation via POST /api/inspections/certificates/generate
-    // which validates the full job/scheduling workflow first.
-    // This prevents certificates being issued without proper job creation and scheduling.
 
     return report;
   }

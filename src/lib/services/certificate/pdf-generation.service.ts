@@ -1,4 +1,5 @@
-﻿import PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit';
+import fetch from 'node-fetch';
 import { prisma } from '@/lib/prisma';
 import { QRCodeService } from './qr-code.service';
 import { Readable } from 'stream';

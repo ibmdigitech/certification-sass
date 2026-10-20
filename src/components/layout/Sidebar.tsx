@@ -53,6 +53,9 @@ import {
   UserCheck,
   Building2,
   RefreshCw,
+  PackageCheck,
+  Sparkles,
+  Bot,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -100,13 +103,15 @@ const operationsGroup: NavGroup = {
   name: "Operations & DC",
   items: [
     { name: "Inspector Calendar", href: "/schedule", icon: CalendarDays },
-    // { name: "Job Performing", href: "/job-performing", icon: ClipboardCheck }, // TODO: Implement page
+    { name: "Job Performing", href: "/job-performing", icon: ClipboardCheck },
     { name: "Delivery Confirmation", href: "/delivery", icon: Truck },
+    { name: "Dispatch Consignments", href: "/delivery/dispatch", icon: PackageCheck },
     { name: "Delivery Logs", href: "/delivery-logs", icon: ClipboardList },
     { name: "Certificates", href: "/certificates", icon: Award },
-    // { name: "Timesheets", href: "/timesheets", icon: Clock }, // TODO: Implement page
+    { name: "Timesheets", href: "/timesheets?type=INSPECTION", icon: Clock },
     // { name: "Payments", href: "/payments", icon: CreditCard }, // TODO: Implement page
     { name: "Accounts & Invoicing", href: "/accounts", icon: DollarSign },
+    { name: "Client LPOs", href: "/accounts/lpos", icon: FileText },
   ],
 };
 
@@ -122,6 +127,7 @@ const trainingCertificationGroup: NavGroup = {
     { name: "Competencies", href: "/training/competencies", icon: Award },
     { name: "Certificates", href: "/training/certificates", icon: FileCheck2 },
     { name: "Certificate Renewal", href: "/training/certificates/renewal", icon: RefreshCw },
+    { name: "Timesheets", href: "/timesheets?type=TRAINING", icon: Clock },
     { name: "Reports", href: "/training/reports", icon: BarChart3 },
   ],
 };
@@ -137,6 +143,8 @@ const inspectionCertificationGroup: NavGroup = {
     { name: "Review", href: "/inspections/review", icon: Eye },
     { name: "Reschedule", href: "/inspections/reschedule", icon: RotateCcw },
     { name: "Certificates", href: "/inspections/certificates", icon: ShieldCheck },
+    { name: "Competency Matrix", href: "/qms/competency-matrix", icon: Award },
+    { name: "Accreditation", href: "/qms/accreditation", icon: ShieldCheck },
   ],
 };
 
@@ -163,6 +171,14 @@ const administrationGroup: NavGroup = {
   ],
 };
 
+const aiGroup: NavGroup = {
+  name: "CertAI Copilot",
+  items: [
+    { name: "AI Assistants Hub", href: "/ai/assistants", icon: Sparkles, badge: "8 Live" },
+    { name: "Staged Output Review", href: "/ai/review", icon: Bot, badge: "HITL" },
+  ],
+};
+
 // ── Workspace top-level items ──────────────────────────────────────
 
 const workspaceItems: NavItem[] = [
@@ -183,6 +199,7 @@ const allNavGroups: NavGroup[] = [
   inspectionCertificationGroup,
   trainingCertificationGroup,
   fieldTrainingGroup,
+  aiGroup,
   administrationGroup,
 ];
 
@@ -192,6 +209,12 @@ export function Sidebar() {
   const pathname = usePathname() ?? "";
   const { isOnline, queueStatus } = useOfflineStatus();
   const { processQueue } = useOfflineQueue();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Auto-close mobile drawer on route navigation
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const isSetup = pathname.startsWith("/team") || pathname.startsWith("/customers") || pathname.startsWith("/setup");
@@ -251,24 +274,27 @@ export function Sidebar() {
         <button
           type="button"
           className={cn(
-            "w-full justify-start gap-2 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider h-8 inline-flex items-center rounded-md transition-colors",
+            "w-full justify-start gap-2.5 px-3 py-2 text-xs font-semibold uppercase tracking-wider h-8 inline-flex items-center rounded-lg transition-all duration-200 group/btn",
             isActive
-              ? "text-primary bg-primary/10"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              ? "text-primary bg-primary/10 font-bold shadow-xs"
+              : "text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 hover:translate-x-0.5"
           )}
           onClick={() => toggleGroup(group.name)}
         >
-          <GroupIcon className="h-3.5 w-3.5 flex-shrink-0" />
+          <GroupIcon className={cn(
+            "h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover/btn:scale-110",
+            isActive ? "text-primary" : "text-muted-foreground/70"
+          )} />
           <span className="flex-1 truncate text-left text-[11px]">{group.name}</span>
           <ChevronDown
             className={cn(
-              "h-3.5 w-3.5 flex-shrink-0 transition-transform duration-200 text-muted-foreground",
+              "h-3.5 w-3.5 flex-shrink-0 transition-transform duration-200 text-muted-foreground/70",
               isExpanded && "rotate-180"
             )}
           />
         </button>
         {isExpanded && (
-          <nav className="pl-3 mt-0.5 space-y-0.5 w-full">
+          <nav className="pl-3.5 mt-1 space-y-1 w-full border-l border-muted/50 ml-2">
             {group.items.map((item) => {
               const active = isItemActive(item.href);
               return (
@@ -276,16 +302,22 @@ export function Sidebar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "w-full justify-start gap-2.5 px-2.5 py-1 text-xs h-8 inline-flex items-center rounded-md transition-colors cursor-pointer",
+                    "group relative w-full justify-start gap-2.5 px-2.5 py-1.5 text-xs h-8 inline-flex items-center rounded-md transition-all duration-200 cursor-pointer overflow-hidden",
                     active
-                      ? "bg-primary/15 font-semibold text-primary shadow-xs"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                      ? "bg-gradient-to-r from-primary/20 via-primary/10 to-transparent font-semibold text-primary shadow-xs border-l-2 border-primary pl-2"
+                      : "text-muted-foreground/90 hover:text-foreground hover:bg-muted/60 hover:translate-x-1"
                   )}
                 >
-                  <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                  <item.icon className={cn(
+                    "h-3.5 w-3.5 flex-shrink-0 transition-all duration-200 group-hover:scale-110",
+                    active ? "text-primary" : "text-muted-foreground/70 group-hover:text-primary"
+                  )} />
                   <span className="flex-1 truncate text-left">{item.name}</span>
                   {item.badge && (
-                    <Badge variant="outline" className="text-[10px] py-0 px-1 bg-background">
+                    <Badge variant="outline" className={cn(
+                      "text-[10px] py-0 px-1.5 font-medium transition-colors",
+                      active ? "bg-primary text-primary-foreground border-primary" : "bg-muted/60 text-muted-foreground border-border/50"
+                    )}>
                       {item.badge}
                     </Badge>
                   )}
@@ -299,9 +331,10 @@ export function Sidebar() {
   };
 
   const NavWorkspaceItems = () => (
-    <nav className="flex flex-col gap-0.5 w-full">
-      <div className="px-2.5 py-1 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider">
-        Workspace
+    <nav className="flex flex-col gap-1 w-full">
+      <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider flex items-center justify-between">
+        <span>Workspace</span>
+        <span className="h-1 w-1 rounded-full bg-primary/60" />
       </div>
       {workspaceItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
@@ -310,13 +343,16 @@ export function Sidebar() {
             key={item.name}
             href={item.href}
             className={cn(
-              "w-full justify-start gap-2.5 px-2.5 py-1 text-xs h-8 inline-flex items-center rounded-md transition-colors cursor-pointer",
+              "group relative w-full justify-start gap-2.5 px-3 py-1.5 text-xs h-8 inline-flex items-center rounded-md transition-all duration-200 cursor-pointer overflow-hidden",
               isActive
-                ? "bg-primary/15 font-semibold text-primary shadow-xs"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                ? "bg-gradient-to-r from-primary/20 via-primary/10 to-transparent font-semibold text-primary shadow-xs border-l-2 border-primary pl-2.5"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:translate-x-1"
             )}
           >
-            <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+            <item.icon className={cn(
+              "h-3.5 w-3.5 flex-shrink-0 transition-all duration-200 group-hover:scale-110",
+              isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-primary"
+            )} />
             <span className="flex-1 truncate text-left">{item.name}</span>
           </Link>
         );
@@ -409,7 +445,7 @@ export function Sidebar() {
       {/* Mobile Sidebar (Sheet) */}
       <div className="md:hidden flex items-center justify-between p-3 border-b bg-background">
         <div className="flex items-center gap-2">
-          <Sheet>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">
                 <Menu className="h-5 w-5" />

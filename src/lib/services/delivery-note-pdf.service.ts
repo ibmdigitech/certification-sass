@@ -54,6 +54,17 @@ export class DeliveryNotePDFService {
                 },
               },
             },
+            dispatchItems: {
+              include: {
+                certificate: {
+                  select: {
+                    number: true,
+                    holderName: true,
+                    certificateType: true,
+                  },
+                },
+              },
+            },
             user: {
               select: {
                 name: true,
@@ -69,24 +80,37 @@ export class DeliveryNotePDFService {
       throw new Error('Delivery note not found');
     }
 
+    const items: DeliveryNoteItemPDF[] = [];
+    if (note.deliveryLog?.dispatchItems && note.deliveryLog.dispatchItems.length > 0) {
+      note.deliveryLog.dispatchItems.forEach((dItem: any, idx: number) => {
+        items.push({
+          line: idx + 1,
+          item: `Certificate: ${dItem.certificate?.number || dItem.referenceNumber || 'N/A'} - ${dItem.certificate?.holderName || 'Verified Equipment'}`,
+          status: 'DISPATCHED',
+        });
+      });
+    } else {
+      items.push(...this.getDefaultItems(note, note.deliveryLog));
+    }
+
     const pdfData: DeliveryNotePDFData = {
       dnId: note.noteNumber,
       date: note.createdAt,
-      customer: note.deliveryLog?.certificate?.customer || null,
+      customer: note.deliveryLog?.certificate?.customer || { name: note.deliveryLog?.recipientName || 'Customer Client' },
       certificationReference: {
         certId: note.deliveryLog?.id?.toString() || null,
-        certificateNumber: note.deliveryLog?.certificate?.number || null,
+        certificateNumber: note.deliveryLog?.certificate?.number || `${items.length} Bundled Items`,
       },
-      deliveryItems: this.getDefaultItems(note, note.deliveryLog),
-      deliveryMethod: note.deliveryLog?.method || null,
+      deliveryItems: items,
+      deliveryMethod: note.deliveryLog?.method || 'Hand Delivery',
       jobNumber: note.deliveryLog?.certificate?.jobNumber || null,
       workflow: {
         accountsTeamInvoiceGenerated: true,
         deliveryTeamAssigned: true,
-        customerConfirmation: 'pending',
+        customerConfirmation: note.deliveryLog?.recipientName ? `Received by ${note.deliveryLog.recipientName}` : 'pending',
       },
-      notes: note.notes || note.description || null,
-      companyName: note.company?.name || 'Company',
+      notes: note.notes || note.description || note.deliveryLog?.notes || null,
+      companyName: note.company?.name || 'Inspection & Certification Body',
       companyLogo: note.company?.logo,
     };
 

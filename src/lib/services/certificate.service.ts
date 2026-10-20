@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { CertificateNumberService } from './certificate-number.service';
 
 export interface CreateCertificateInput {
@@ -150,11 +150,53 @@ export class CertificateService {
     return CertificateNumberService.previewCertificateNumber(jobId);
   }
 
-  static async getCertificatesByJob(jobId: number, companyId: number) {
-    return prisma.certificate.findMany({
-      where: { jobId, companyId },
-      orderBy: { sequence: 'asc' },
+  static async createRevision(params: {
+    certificateId: number;
+    companyId: number;
+    userId: number;
+    revisionCode?: string;
+    reasonCategory: string;
+    rootCause?: string;
+    oldValue?: string;
+    newValue?: string;
+    changeFields?: Record<string, unknown>;
+  }) {
+    // 1. Verify certificate exists
+    const cert = await prisma.certificate.findFirst({
+      where: { id: params.certificateId, companyId: params.companyId },
+      include: { revisions: { orderBy: { createdAt: 'desc' } } },
     });
+
+    if (!cert) {
+      throw new Error(`Certificate ${params.certificateId} not found`);
+    }
+
+    // 2. Compute revision code (e.g. R01, R02)
+    const revisionCount = cert.revisions.length;
+    const computedRevisionCode = params.revisionCode ?? `R${String(revisionCount + 1).padStart(2, '0')}`;
+
+    // 3. Create revision record
+    const revision = await prisma.revision.create({
+      data: {
+        companyId: params.companyId,
+        certificateId: params.certificateId,
+        revisionCode: computedRevisionCode,
+        reasonCategory: params.reasonCategory,
+        rootCause: params.rootCause,
+        oldValue: params.oldValue,
+        newValue: params.newValue,
+        changeFields: params.changeFields as any,
+        approvedBy: params.userId,
+      },
+    });
+
+    // 4. Update parent certificate status to revised
+    await prisma.certificate.update({
+      where: { id: params.certificateId },
+      data: { status: 'revised' },
+    });
+
+    return revision;
   }
 }
 

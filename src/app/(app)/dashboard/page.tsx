@@ -148,20 +148,20 @@ export default function DashboardPage() {
             Connected UAE Technical Services & Certification Operations Platform (EIAC & ENAS Scope)
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-initial" asChild>
             <Link href="/sales/inquiries">
               <Search className="h-4 w-4 mr-1 text-primary" />
               Inspection Inquiry
             </Link>
           </Button>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-initial" asChild>
             <Link href="/inspections">
               <FileText className="h-4 w-4 mr-1 text-primary" />
               Inspection Report
             </Link>
           </Button>
-          <Badge variant="secondary" className="px-3 py-1 font-semibold text-xs">
+          <Badge variant="secondary" className="px-3 py-1 font-semibold text-xs whitespace-nowrap">
             2026 Active Cycle
           </Badge>
         </div>
@@ -312,11 +312,13 @@ export default function DashboardPage() {
 
       {/* Main Tabs: Inspection Dashboard vs Sales Dashboard vs Training */}
       <Tabs defaultValue="inspection" className="space-y-6">
-        <TabsList className="grid grid-cols-3 max-w-md">
-          <TabsTrigger value="inspection">Inspection Dashboard</TabsTrigger>
-          <TabsTrigger value="sales">Sales Dashboard</TabsTrigger>
-          <TabsTrigger value="training">Training & Trainees</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 scrollbar-none">
+          <TabsList className="inline-flex w-full sm:w-auto min-w-[320px] max-w-md">
+            <TabsTrigger value="inspection" className="text-xs sm:text-sm">Inspection</TabsTrigger>
+            <TabsTrigger value="sales" className="text-xs sm:text-sm">Sales</TabsTrigger>
+            <TabsTrigger value="training" className="text-xs sm:text-sm">Training</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Tab 1: Inspection Dashboard (Matches Page 1 & 5) */}
         <TabsContent value="inspection" className="space-y-6">

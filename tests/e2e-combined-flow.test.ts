@@ -323,6 +323,7 @@ describe('End-to-End Combined Commercial & Operational Flow (Sections 4 & 5)', (
     const timesheet = await prisma.timesheet.create({
       data: {
         companyId: company.id,
+        timesheetNumber: `TS-${company.id}-${Date.now()}`,
         jobId: parentJob.id,
         userId: inspector.id,
         date: new Date(),
